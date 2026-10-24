@@ -7,8 +7,8 @@ interface NavItem { label: string, to: string, icon: IconName }
 
 const mainNav = computed<NavItem[]>(() => [
   { label: 'Обзор', to: `/${role.value}/overview`, icon: 'overview' },
-  { label: 'Периоды', to: `/${role.value}/payments`, icon: 'payments' },
   { label: 'Календарь', to: `/${role.value}/calendar`, icon: 'calendar' },
+  { label: 'Периоды', to: `/${role.value}/payments`, icon: 'payments' },
   { label: 'Регулярные', to: `/${role.value}/recurring`, icon: 'recurring' },
   // admins have it in their own section below
   ...(isAdmin.value ? [] : [{ label: 'Настройки', to: '/user/settings', icon: 'settings' } as NavItem]),
