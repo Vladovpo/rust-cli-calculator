@@ -27,21 +27,19 @@ const weeks = computed(() => {
   return Math.ceil((shift + days) / 7)
 })
 
-// every payment of the day is shown, they shrink to fit the cell (rows are 124px).
-// first one column of pills, a bit lower when there are more of them; when that gets too
-// small to read, they go into a grid of 2, then 3 columns
+// the payments of a day share the free part of the cell (rows are 124px, about 80px left
+// under the day number): one payment fills it, more split it into stripes. when stripes
+// would get thinner than 16px they go into a grid of 2, 3, then 4 columns
 const area = 80
-const minHeight = 16
+const gap = 3
 
 function layout(count: number) {
-  for (const cols of [1, 2, 3]) {
-    const rows = Math.ceil(count / cols)
-    const gap = rows * 22 + (rows - 1) * 4 <= area ? 4 : 2
-    const height = Math.min(22, Math.floor((area - (rows - 1) * gap) / rows))
-    // past 3 columns the row of the calendar grows instead
-    if (height >= minHeight || cols === 3) return { cols, gap, height: Math.max(height, minHeight) }
-  }
-  return { cols: 3, gap: 2, height: minHeight }
+  let cols = 1
+  while (cols < 4 && (area - (Math.ceil(count / cols) - 1) * gap) / Math.ceil(count / cols) < 16) cols++
+  const rows = Math.ceil(count / cols)
+  const height = (area - (rows - 1) * gap) / rows
+  // a tall stripe lets a long name wrap, 15px per line
+  return { cols, rows, lines: Math.max(1, Math.floor((height - 6) / 15)), small: height < 22 || cols > 1 }
 }
 
 const cells = computed(() => monthCells(props.year, props.month, weeks.value).map((cell) => {
@@ -71,8 +69,8 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
       <div
         v-if="cell.payments.length"
         class="payments"
-        :class="{ small: cell.layout.height < 22 || cell.layout.cols > 1, grid2: cell.layout.cols === 2, grid3: cell.layout.cols === 3 }"
-        :style="{ '--cols': cell.layout.cols, '--gap': `${cell.layout.gap}px`, '--chip-h': `${cell.layout.height}px` }"
+        :class="{ small: cell.layout.small, grid2: cell.layout.cols === 2, tiles: cell.layout.cols > 2 }"
+        :style="{ '--cols': cell.layout.cols, '--rows': cell.layout.rows, '--lines': cell.layout.lines }"
       >
         <button
           v-for="period in cell.payments"
@@ -94,8 +92,7 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  /* a very busy day (more than three columns of payments) makes its row taller */
-  grid-template-rows: 30px repeat(var(--weeks), minmax(124px, auto));
+  grid-template-rows: 30px repeat(var(--weeks), 124px);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
@@ -172,59 +169,45 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 }
 
 .payments {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  grid-auto-rows: var(--chip-h);
-  gap: var(--gap);
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: 3px;
 }
 
+/* fills its share of the cell. the corners stay round, a thin stripe ends up a pill */
 .payment {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
-  height: var(--chip-h);
-  padding: 0 8px;
+  min-height: 0;
+  padding: 0 7px;
   border: 1px solid transparent;
-  border-radius: 9999px;
+  border-radius: 10px;
   font-size: 12px;
   font-weight: 500;
+  line-height: 15px;
   text-align: left;
-  white-space: nowrap;
-  transition: border-color 0.2s ease, transform 0.35s var(--ease-out), filter 0.2s ease;
-}
-
-/* lower pills or a grid of them: a smaller font and less padding so the names still read */
-.small .payment {
-  gap: 4px;
-  padding: 0 6px;
-  font-size: 11px;
-}
-
-/* in a grid the pill's colour already tells the status, the dot only takes room */
-.grid2 .dot,
-.grid3 .dot {
-  display: none;
-}
-
-/* three columns are too narrow for a name: just the coloured tiles, the name is in the tooltip */
-.grid3 .payment {
-  padding: 0;
-}
-
-.grid3 .name {
-  display: none;
+  transition: border-color 0.2s ease, filter 0.2s ease;
 }
 
 .payment:hover {
-  transform: translateX(2px);
   filter: brightness(1.08);
 }
 
+/* the name wraps if the stripe is tall enough, the last line ends with … */
 .name {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  /* break a long word with a hyphen, not just anywhere */
+  hyphens: auto;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--lines);
 }
 
 .dot {
@@ -233,6 +216,30 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+}
+
+/* thin stripes or a grid: smaller text so the names still read */
+.small .payment {
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+/* in a grid the colour already tells the status, the dot only takes room */
+.grid2 .dot,
+.tiles .dot {
+  display: none;
+}
+
+/* 3 and 4 columns are too narrow for a name: just the coloured tiles, the name is in the tooltip */
+.tiles .payment {
+  padding: 0;
+  border-radius: 6px;
+}
+
+.tiles .name {
+  display: none;
 }
 
 /* same colours as the status badges */
