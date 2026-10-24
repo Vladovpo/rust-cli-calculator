@@ -62,6 +62,9 @@ const codeSent = ref(false)
 const code = ref('')
 const confirmBusy = ref(false)
 const confirmError = ref('')
+const codeField = ref<{ focus: () => void, shake: () => void }>()
+// the code was right: the cells play their green wave before the row folds away
+const codeOk = ref(false)
 
 async function sendCode() {
   confirmBusy.value = true
@@ -70,7 +73,8 @@ async function sendCode() {
     await api.notifications.sendCode()
     codeSent.value = true
     code.value = ''
-    nextTick(() => document.querySelector<HTMLInputElement>('.code input')?.focus())
+    // already on screen after «Ещё раз»: back into the field
+    codeField.value?.focus()
   }
   catch (e) {
     confirmError.value = apiError(e)
@@ -86,14 +90,20 @@ async function verify() {
   confirmError.value = ''
   try {
     await api.notifications.verify(code.value)
+    codeOk.value = true
+    await new Promise(resolve => setTimeout(resolve, 900))
+    codeOk.value = false
     codeSent.value = false
     await load()
   }
   catch (e) {
     confirmError.value = apiError(e)
-    // a wrong code: the field is cleared and ready for the next try
-    code.value = ''
-    nextTick(() => document.querySelector<HTMLInputElement>('.code input')?.focus())
+    // a wrong code: the cells shake, then empty out for the next try
+    codeField.value?.shake()
+    setTimeout(() => {
+      code.value = ''
+      codeField.value?.focus()
+    }, 450)
   }
   finally {
     confirmBusy.value = false
@@ -102,7 +112,15 @@ async function verify() {
 
 // all six digits typed: check right away, no need to press the button
 watch(code, value => value.length === 6 && verify())
-const digitsOnly = (text: string) => text.replace(/\D/g, '').slice(0, 6)
+
+// the grey line under «Подтвердите почту», it changes with the steps
+const confirmHint = computed(() => {
+  if (codeOk.value) return 'Почта подтверждена'
+  if (confirmError.value) return confirmError.value
+  if (changedEmail.value) return 'Сначала сохраните новую почту'
+  if (codeSent.value) return `Код отправлен на ${saved.value?.email}`
+  return 'Письма приходят только на подтверждённую почту'
+})
 
 async function save() {
   const days = Number(form.days)
@@ -171,39 +189,37 @@ async function save() {
       </div>
 
       <!-- letters only go to a confirmed address -->
-      <div v-if="needsConfirm" class="row confirm">
-        <div>
-          <p>Подтвердите почту</p>
-          <p v-if="confirmError" class="hint error-text">{{ confirmError }}</p>
-          <p v-else-if="changedEmail" class="hint">Сначала сохраните новую почту</p>
-          <p v-else-if="codeSent" class="hint">Код отправлен на {{ saved?.email }}</p>
-          <p v-else class="hint">Письма приходят только на подтверждённую почту</p>
+      <Transition name="unfold">
+        <div v-if="needsConfirm" class="unfold">
+          <div class="clip">
+            <div class="row confirm">
+              <div>
+                <p>Подтвердите почту</p>
+                <Transition name="swap" mode="out-in">
+                  <p :key="confirmHint" class="hint" :class="{ 'error-text': confirmError && !codeOk, ok: codeOk }">{{ confirmHint }}</p>
+                </Transition>
+              </div>
+              <Transition name="swap" mode="out-in">
+                <span v-if="codeSent && !changedEmail" key="code" class="actions">
+                  <button type="button" class="again" :disabled="confirmBusy || codeOk" @click="sendCode">Ещё раз</button>
+                  <UiCodeInput
+                    ref="codeField"
+                    v-model="code"
+                    :busy="confirmBusy && !codeOk"
+                    :success="codeOk"
+                    label="Код из письма"
+                    autofocus
+                    @keydown.enter="verify"
+                  />
+                </span>
+                <UiButton v-else key="send" size="md" :disabled="confirmBusy || changedEmail" @click="sendCode">
+                  {{ confirmBusy ? 'Отправляем…' : 'Отправить код' }}
+                </UiButton>
+              </Transition>
+            </div>
+          </div>
         </div>
-        <span class="actions">
-          <template v-if="codeSent && !changedEmail">
-            <button type="button" class="again" :disabled="confirmBusy" @click="sendCode">Ещё раз</button>
-            <span class="field code">
-              <UiInput
-                v-model="code"
-                :filter="digitsOnly"
-                mono
-                inputmode="numeric"
-                autocomplete="one-time-code"
-                placeholder="000000"
-                maxlength="6"
-                aria-label="Код из письма"
-                @keydown.enter="verify"
-              />
-            </span>
-            <UiButton size="md" variant="primary" :disabled="confirmBusy || code.length !== 6" @click="verify">
-              {{ confirmBusy ? 'Проверяем…' : 'Подтвердить' }}
-            </UiButton>
-          </template>
-          <UiButton v-else size="md" :disabled="confirmBusy || changedEmail" @click="sendCode">
-            {{ confirmBusy ? 'Отправляем…' : 'Отправить код' }}
-          </UiButton>
-        </span>
-      </div>
+      </Transition>
 
       <div class="row">
         <div>
@@ -266,12 +282,6 @@ async function save() {
   flex-shrink: 0;
   align-items: center;
   gap: 10px;
-}
-
-/* six digits, spaced a little so they read like a code */
-.code :deep(input) {
-  letter-spacing: 0.2em;
-  text-align: center;
 }
 
 .again {

@@ -408,32 +408,6 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
 .outcome.success { background: var(--green-bg); color: var(--green); }
 .outcome.failure { background: var(--red-bg); color: var(--red); }
 
-/* details unfold from the row: the height goes 0 → its own (grid rows 0fr → 1fr), the text fades in */
-.unfold {
-  display: grid;
-  grid-template-rows: 1fr;
-}
-
-.clip {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.unfold-enter-active,
-.unfold-leave-active {
-  transition: grid-template-rows 0.45s var(--ease-out), opacity 0.3s ease;
-}
-
-.unfold-leave-active {
-  transition-duration: 0.3s, 0.2s;
-}
-
-.unfold-enter-from,
-.unfold-leave-to {
-  grid-template-rows: 0fr;
-  opacity: 0;
-}
-
 .details {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

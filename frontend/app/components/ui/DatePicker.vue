@@ -29,7 +29,11 @@ function monthOf(iso: string) {
   return { year, month: month - 1 }
 }
 
+// which way the month went, so the days slide in from that side
+const way = ref<'next' | 'prev'>('next')
+
 function shift(step: number) {
+  way.value = step > 0 ? 'next' : 'prev'
   const date = new Date(view.value.year, view.value.month + step, 1)
   view.value = { year: date.getFullYear(), month: date.getMonth() }
 }
@@ -110,19 +114,21 @@ useClickOutside(root, () => { open.value = false }, open)
             <button type="button" class="arrow" aria-label="Следующий месяц" @click="shift(1)"><UiIcon name="right" :size="15" /></button>
           </div>
 
-          <div class="grid">
-            <span v-for="name in weekdays" :key="name" class="weekday mono">{{ name }}</span>
-            <button
-              v-for="cell in cells"
-              :key="cell.iso"
-              type="button"
-              class="day mono"
-              :class="{ other: !cell.inMonth, weekend: cell.weekend, today: cell.iso === today, selected: cell.iso === model }"
-              @click="pick(cell.iso)"
-            >
-              {{ cell.day }}
-            </button>
-          </div>
+          <Transition :name="`slide-${way}`" mode="out-in">
+            <div :key="`${view.year}-${view.month}`" class="grid">
+              <span v-for="name in weekdays" :key="name" class="weekday mono">{{ name }}</span>
+              <button
+                v-for="cell in cells"
+                :key="cell.iso"
+                type="button"
+                class="day mono"
+                :class="{ other: !cell.inMonth, weekend: cell.weekend, today: cell.iso === today, selected: cell.iso === model }"
+                @click="pick(cell.iso)"
+              >
+                {{ cell.day }}
+              </button>
+            </div>
+          </Transition>
         </template>
 
         <button type="button" class="today-link" @click="pick(today)">Сегодня, {{ toRu(today) }}</button>

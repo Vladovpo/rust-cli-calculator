@@ -87,8 +87,10 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
       />
 
       <div class="side">
+        <!-- a new key for every payment, so its lines come up again -->
         <DayPanel
           v-if="selected"
+          :key="selected.id"
           :kicker="kicker"
           :title="`${day} ${monthNamesGenitive[shown.month]}`"
           :period="selected"

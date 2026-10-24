@@ -77,7 +77,7 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 
     <!-- a click on the day itself, not on a payment, goes through that day's payments one by one -->
     <div
-      v-for="cell in cells"
+      v-for="(cell, index) in cells"
       :key="cell.key"
       class="cell"
       :class="{ weekend: cell.weekend, pickable: cell.payments.length }"
@@ -91,7 +91,7 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
         v-if="cell.payments.length"
         class="payments"
         :class="{ small: cell.layout.small, grid2: cell.layout.cols === 2, tiles: cell.layout.cols > 2 }"
-        :style="{ '--cols': cell.layout.cols, '--rows': cell.layout.rows, '--lines': cell.layout.lines }"
+        :style="{ '--cols': cell.layout.cols, '--rows': cell.layout.rows, '--lines': cell.layout.lines, '--d': index % 7 + Math.floor(index / 7) }"
       >
         <button
           v-for="period in cell.payments"
@@ -305,7 +305,28 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 .payment.overdue { background: var(--red-bg); color: var(--red); }
 .payment.ended { background: var(--subtle); color: var(--ink-3); }
 
+/* picked: the outline appears and the plaque gives a small bounce */
 .payment.selected {
   border-color: currentColor;
+  animation: picked 0.45s var(--ease-spring);
+}
+
+@keyframes picked {
+  40% {
+    transform: scale(1.06);
+  }
+}
+
+/* a new month: the plaques pop in diagonally, from the top left corner to the bottom right */
+.payments {
+  animation: plaques-in 0.5s var(--ease-spring) backwards;
+  animation-delay: calc(var(--d) * 30ms);
+}
+
+@keyframes plaques-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
 }
 </style>

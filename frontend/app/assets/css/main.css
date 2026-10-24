@@ -165,6 +165,8 @@ p {
    <Transition name="menu">  dropdowns, calendars, popovers: fade, slight scale from the top edge
    <Transition name="modal"> modals: backdrop blurs in, window springs up
    <Transition name="page">  (nuxt.config) a new page fades up out of a soft blur
+   <Transition name="unfold"> a block opens to its height and folds back (see below)
+   <Transition name="swap">  one text gives way to the next
    .rise                     rows and cards come up one after another, delay from --i */
 :root {
     /* fast start, long soft landing */
@@ -215,6 +217,79 @@ p {
 .modal-leave-to .modal {
     opacity: 0;
     transform: scale(0.98);
+}
+
+/* <Transition name="unfold"> around <div class="unfold"><div class="clip">…</div></div>:
+   a block opens from nothing to its own height (grid rows 0fr → 1fr) and fades in, and folds back.
+   used by the journal details and the email confirmation */
+.unfold {
+    display: grid;
+    grid-template-rows: 1fr;
+}
+
+.clip {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.unfold-enter-active,
+.unfold-leave-active {
+    transition: grid-template-rows 0.45s var(--ease-out), opacity 0.3s ease;
+}
+
+.unfold-leave-active {
+    transition-duration: 0.3s, 0.2s;
+}
+
+.unfold-enter-from,
+.unfold-leave-to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+}
+
+/* <Transition name="swap" mode="out-in">: one text or control gives way to the next,
+   the old one slips up and fades, the new one comes up from below */
+.swap-enter-active {
+    transition: opacity 0.25s ease, transform 0.4s var(--ease-out), filter 0.25s ease;
+}
+
+.swap-leave-active {
+    transition: opacity 0.12s ease, transform 0.12s ease, filter 0.12s ease;
+}
+
+.swap-enter-from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+}
+
+.swap-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+/* <Transition :name="`slide-${way}`" mode="out-in">: a month or a year in a picker gives way to
+   the next one, sliding in from the side you went to */
+.slide-next-enter-active,
+.slide-prev-enter-active {
+    transition: opacity 0.2s ease, transform 0.35s var(--ease-out);
+}
+
+.slide-next-leave-active,
+.slide-prev-leave-active {
+    transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.slide-next-enter-from,
+.slide-prev-leave-to {
+    opacity: 0;
+    transform: translateX(16px);
+}
+
+.slide-next-leave-to,
+.slide-prev-enter-from {
+    opacity: 0;
+    transform: translateX(-16px);
 }
 
 /* only the entering page animates: the old one leaves at once, so there is never

@@ -16,7 +16,7 @@ withDefaults(defineProps<{ total: CurrencyTotal, label?: string, loading?: boole
 
     <p class="label">{{ label }}</p>
     <p v-if="loading" class="sum"><UiSkeleton width="190px" height="26px" /></p>
-    <p v-else class="sum mono">{{ total.total }}</p>
+    <p v-else class="sum mono"><UiCountUp :value="total.total" /></p>
 
     <div class="track">
       <div v-if="!loading" class="paid" :style="{ width: `${Math.max(total.progress * 100, 1.2)}%` }" />
@@ -25,17 +25,17 @@ withDefaults(defineProps<{ total: CurrencyTotal, label?: string, loading?: boole
     <UiLeaderRow>
       <template #label>Оплачено</template>
       <UiSkeleton v-if="loading" width="80px" />
-      <template v-else>{{ total.paid }}</template>
+      <UiCountUp v-else :value="total.paid" />
     </UiLeaderRow>
     <UiLeaderRow>
       <template #label>Не оплачено</template>
       <UiSkeleton v-if="loading" width="70px" />
-      <template v-else>{{ total.unpaid }}</template>
+      <UiCountUp v-else :value="total.unpaid" />
     </UiLeaderRow>
     <UiLeaderRow>
       <template #label>Просрочено</template>
       <UiSkeleton v-if="loading" width="60px" />
-      <span v-else :class="total.overdue ? 'overdue' : 'muted'">{{ total.overdue ?? '—' }}</span>
+      <span v-else :class="total.overdue ? 'overdue' : 'muted'"><UiCountUp v-if="total.overdue" :value="total.overdue" /><template v-else>—</template></span>
     </UiLeaderRow>
   </article>
 </template>

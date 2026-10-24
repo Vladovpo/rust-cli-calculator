@@ -14,10 +14,10 @@ defineProps<{ title: string, totals: CurrencyTotal[], loading?: boolean }>()
       <UiLeaderRow>
         <template #label><span class="mono code">{{ total.code }}</span></template>
         <UiSkeleton v-if="loading" width="110px" />
-        <span v-else class="sum">{{ total.total }}</span>
+        <UiCountUp v-else class="sum" :value="total.total" />
       </UiLeaderRow>
       <p v-if="loading" class="paid"><UiSkeleton width="90px" height="10px" /></p>
-      <p v-else class="paid mono">оплачено {{ total.paid }}</p>
+      <p v-else class="paid mono">оплачено <UiCountUp :value="total.paid" /></p>
     </div>
   </section>
 </template>

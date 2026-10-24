@@ -135,23 +135,31 @@ async function sendTest() {
           <p v-if="link.linked" class="hint">{{ linkedText || 'Привязан' }}</p>
           <p v-else class="hint">Бот будет писать в личку о ваших платежах</p>
         </div>
-        <span v-if="link.linked" class="state ok"><span class="dot" />привязан</span>
-        <UiButton v-else-if="!deepLink" size="md" variant="primary" :disabled="busy" @click="getLink">Привязать</UiButton>
-        <span v-else class="state off"><span class="dot" />ждём подтверждения</span>
+        <Transition name="swap" mode="out-in">
+          <span v-if="link.linked" key="linked" class="state ok"><span class="dot" />привязан</span>
+          <UiButton v-else-if="!deepLink" key="link" size="md" variant="primary" :disabled="busy" @click="getLink">Привязать</UiButton>
+          <span v-else key="waiting" class="state off waiting"><span class="dot" />ждём подтверждения</span>
+        </Transition>
       </div>
 
       <!-- the link is ready: open it in telegram and confirm there -->
-      <div v-if="!link.linked && deepLink" class="row">
-        <div class="link-text">
-          <p>Откройте ссылку и нажмите кнопку подтверждения в боте</p>
-          <p class="hint mono link">{{ deepLink }}</p>
-          <p v-if="linkUntil" class="hint">Ссылка действует до {{ linkUntil }}</p>
+      <Transition name="unfold">
+        <div v-if="!link.linked && deepLink" class="unfold">
+          <div class="clip">
+            <div class="row">
+              <div class="link-text">
+                <p>Откройте ссылку и нажмите кнопку подтверждения в боте</p>
+                <p class="hint mono link">{{ deepLink }}</p>
+                <p v-if="linkUntil" class="hint">Ссылка действует до {{ linkUntil }}</p>
+              </div>
+              <span class="actions">
+                <UiButton size="md" @click="check">Проверить</UiButton>
+                <UiButton size="md" variant="primary" @click="openLink">Открыть в Telegram</UiButton>
+              </span>
+            </div>
+          </div>
         </div>
-        <span class="actions">
-          <UiButton size="md" @click="check">Проверить</UiButton>
-          <UiButton size="md" variant="primary" @click="openLink">Открыть в Telegram</UiButton>
-        </span>
-      </div>
+      </Transition>
 
       <div v-if="link.linked && link.bot_blocked" class="row">
         <div>
@@ -272,10 +280,43 @@ async function sendTest() {
 }
 
 .state .dot {
+  position: relative;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+}
+
+/* waiting for the bot: a ring keeps spreading out of the dot */
+.waiting .dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: waiting 1.6s var(--ease-out) infinite;
+}
+
+@keyframes waiting {
+  from {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(3);
+  }
+}
+
+/* just linked: the green dot pops in */
+.ok .dot {
+  animation: linked 0.5s var(--ease-spring);
+}
+
+@keyframes linked {
+  from {
+    transform: scale(0);
+  }
 }
 
 .ok {
