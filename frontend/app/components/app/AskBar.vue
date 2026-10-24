@@ -2,7 +2,6 @@
 // question bar in the page header. asking opens the chat under it; a click outside closes the chat
 // and the bar turns into a button that brings the same chat back
 const chat = useAssistant()
-const demo = useDemo()
 const { messages, open } = chat
 
 const question = ref('')
@@ -156,7 +155,6 @@ onBeforeUnmount(() => {
       >
         <div class="head">
           <span class="kicker">Ассистент</span>
-          <span v-if="demo.enabled.value" class="demo mono">демо</span>
           <button type="button" class="new" @click="newChat">Новый чат</button>
         </div>
 
@@ -284,15 +282,6 @@ onBeforeUnmount(() => {
   gap: 8px;
   padding: 10px 14px 8px;
   border-bottom: 1px solid var(--line);
-}
-
-.demo {
-  padding: 0 7px;
-  border-radius: 9999px;
-  background: var(--amber-bg);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--amber);
 }
 
 .new {

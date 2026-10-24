@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Period } from '~/utils/demo'
+import type { Period } from '~/utils/periods'
 
 const { isAdmin } = useRole()
 
@@ -61,7 +61,7 @@ function mark(period: Period) {
       @mark="mark(overdue)"
     />
 
-    <AppSectionTitle index="01" title="Итоги по валютам" hint="валюты не суммируются между собой" class="section">
+    <AppSectionTitle index="01" title="Итоги по валютам" class="section">
       <template #right>
         <span class="as-of">
           <span class="muted">По дате</span>
@@ -80,7 +80,7 @@ function mark(period: Period) {
         :style="{ viewTransitionName: `card-${total.code}`, '--i': i }"
       />
     </div>
-    <p class="kicker footnote">¹ срок до выбранной даты и то, что оплачено раньше срока · курсы и конвертация не применяются</p>
+    <p class="kicker footnote">¹ срок до выбранной даты и то, что оплачено раньше срока</p>
 
     <AppSectionTitle index="02" title="Ближайшие 7 дней" class="section">
       <UiSegmented

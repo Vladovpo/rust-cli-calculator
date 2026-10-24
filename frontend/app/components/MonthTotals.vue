@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CurrencyTotal } from '~/utils/demo'
+import type { CurrencyTotal } from '~/utils/periods'
 
 defineProps<{ title: string, totals: CurrencyTotal[] }>()
 </script>

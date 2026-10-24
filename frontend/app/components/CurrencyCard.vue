@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CurrencyTotal } from '~/utils/demo'
+import type { CurrencyTotal } from '~/utils/periods'
 
 withDefaults(defineProps<{ total: CurrencyTotal, label?: string }>(), { label: 'К оплате за месяц¹' })
 </script>

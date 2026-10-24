@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Period } from '~/utils/demo'
+import type { Period } from '~/utils/periods'
 
 const { withTransition } = useViewTransition()
 
@@ -51,7 +51,7 @@ const weekday = computed(() => (selectedIso.value ? new Date(selectedIso.value).
 const monthPeriods = computed(() => payments.periods.value.filter(period => fromRu(period.due).startsWith(month.value)))
 const monthTotals = computed(() => totalsOn(lastDayOf(month.value), monthPeriods.value))
 
-// the margin note follows what's actually overdue
+// the badge under the totals counts what's overdue right now
 const overdueNow = computed(() => payments.periods.value.filter(period => period.status === 'overdue'))
 // the selected day's other payments, listed under the selected one
 const sameDay = computed(() => payments.periods.value.filter(period => period.due === selected.value?.due && period.id !== selected.value?.id))
@@ -60,7 +60,7 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
 
 <template>
   <div>
-    <AppPageHeader title="Календарь" subtitle="Сроки оплат по дням — с отметкой статуса" />
+    <AppPageHeader title="Календарь" />
 
     <div class="toolbar">
       <UiMonthPicker v-model="monthModel" variant="title" :current="thisMonth" />
@@ -95,9 +95,6 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
         />
         <MonthTotals :title="`Итоги ${monthNamesGenitive[shown.month]}`" :totals="monthTotals" />
         <div v-if="overdueNow.length" class="note">
-          <p class="italic margin">
-            Отметка на полях:<br>{{ overdueNow[0]!.title.toLowerCase() }} за {{ Number(overdueNow[0]!.due.slice(0, 2)) }}-е ещё не оплачена.
-          </p>
           <UiStatus status="overdue" :label="`${overdueNow.length} просрочен${overdueNow.length > 1 ? 'о' : ''}`" />
         </div>
       </div>
@@ -153,11 +150,5 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-}
-
-.margin {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--ink-2);
 }
 </style>

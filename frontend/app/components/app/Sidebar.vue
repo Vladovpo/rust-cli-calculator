@@ -47,7 +47,6 @@ const user = computed(() => ({
 }))
 
 const { prefs, switchTheme } = usePrefs()
-const demo = useDemo()
 const isLight = computed(() => prefs.value.theme === 'light')
 function toggleTheme(e: MouseEvent) {
   const box = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -84,10 +83,6 @@ function toggleTheme(e: MouseEvent) {
         </template>
       </template>
     </nav>
-
-    <NuxtLink v-if="demo.enabled.value" :to="`/${role}/settings`" class="demo mono" title="Действия меняют только демо-данные в этом браузере">
-      демо-режим
-    </NuxtLink>
 
     <!-- settings on the left, the theme on the right: two round icon buttons -->
     <div class="status">
@@ -227,27 +222,12 @@ function toggleTheme(e: MouseEvent) {
   margin: 14px 12px 12px;
 }
 
-.demo {
-  align-self: flex-start;
-  margin: auto 12px 12px;
-  padding: 2px 9px;
-  border-radius: 9999px;
-  background: var(--amber-bg);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--amber);
-}
-
 .status {
   display: flex;
   align-items: center;
   justify-content: space-between;
   /* the settings circle lines up with the nav icons above it */
   margin: auto 4px 12px 6px;
-}
-
-.demo + .status {
-  margin-top: 0;
 }
 
 .round {

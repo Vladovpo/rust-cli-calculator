@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Period } from '~/utils/demo'
+import type { Period } from '~/utils/periods'
 
 const props = defineProps<{ items: Period[], canMark?: (period: Period) => boolean }>()
 

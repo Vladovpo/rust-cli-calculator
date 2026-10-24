@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Template } from '~/utils/demo'
+import type { Template } from '~/utils/periods'
 
 const { isAdmin } = useRole()
 const showNewPayment = ref(false)

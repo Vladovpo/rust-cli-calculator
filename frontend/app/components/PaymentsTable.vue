@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CurrencyTotal, Period } from '~/utils/demo'
+import type { CurrencyTotal, Period } from '~/utils/periods'
 
 const props = withDefaults(defineProps<{
   periods: Period[]

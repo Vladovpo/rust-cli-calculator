@@ -58,7 +58,7 @@ async function personaSaved() {
 
 <template>
   <div>
-    <AppPageHeader title="Пользователи" subtitle="Обычные пользователи команды. Администратор задаётся в .env">
+    <AppPageHeader title="Пользователи">
       <template #actions>
         <UiButton variant="primary" class="new" @click="modal = 'newUser'">Новый пользователь</UiButton>
       </template>

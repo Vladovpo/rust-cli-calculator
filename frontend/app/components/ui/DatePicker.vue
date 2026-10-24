@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // value is 'YYYY-MM-DD', the field shows 'DD.MM.YYYY'. the date can only be picked in the calendar, not typed
 const props = withDefaults(defineProps<{
-  // which day is "today" (demo screens live on 24.10.2026)
+  // which day is "today"
   today?: string
 }>(), { today: undefined })
 

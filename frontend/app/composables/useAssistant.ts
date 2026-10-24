@@ -26,7 +26,6 @@ const unavailable = 'Ассистент сейчас недоступен. По�
 // one chat for the whole panel: it stays when you change pages
 export function useAssistant() {
   const api = useApi()
-  const demo = useDemo()
   const { reduceMotion } = usePrefs()
 
   const messages = useState<ChatMessage[]>('chat-messages', () => [])
@@ -34,9 +33,9 @@ export function useAssistant() {
   const status = useState<AssistantStatusResponse | null>('chat-status', () => null)
   const nextId = () => (messages.value.at(-1)?.id ?? 0) + 1
 
-  // hidden only when the server says the feature is off (and demo mode can't stand in)
-  const available = computed(() => demo.enabled.value || status.value?.enabled !== false)
-  const examples = computed(() => (demo.enabled.value ? demoExamples : status.value?.examples ?? []))
+  // hidden only when the server says the feature is off
+  const available = computed(() => status.value?.enabled !== false)
+  const examples = computed(() => status.value?.examples ?? [])
   const busy = computed(() => messages.value.some(message => message.pending || message.typing))
 
   async function loadStatus() {
@@ -109,15 +108,6 @@ export function useAssistant() {
     message.followups = envelope?.followups
   }
 
-  async function askDemo(question: string, message: ChatMessage) {
-    const answer = demoAnswer(question, demo.periods.value)
-    message.step = answer.step
-    // a short pause, like the real one looking things up
-    await new Promise(resolve => setTimeout(resolve, reduceMotion.value ? 0 : 600))
-    await typeOut(message, answer.text)
-    message.followups = demoExamples.filter(example => example !== question).slice(0, 2)
-  }
-
   async function ask(question: string) {
     question = question.trim()
     if (!question || busy.value) return
@@ -126,8 +116,6 @@ export function useAssistant() {
     messages.value.push({ id: nextId(), from: 'assistant', text: '', pending: true, step: 'Думаю' })
     // the reactive copy, so changes below redraw the chat
     const message = messages.value[messages.value.length - 1]!
-
-    if (demo.enabled.value) return askDemo(question, message)
 
     controller = new AbortController()
     try {

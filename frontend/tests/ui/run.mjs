@@ -43,13 +43,7 @@ function watch(page, who) {
 }
 
 const browser = await chromium.launch()
-// most checks are about the screens, so they run on the fixed demo data (demo mode on).
-// T48 checks the live api calls, T50 the demo actions
-const demoOn = () => {
-  if (!localStorage.getItem('invoice-keeper:prefs')) localStorage.setItem('invoice-keeper:prefs', JSON.stringify({ demoMode: true }))
-}
 const admin = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
-await admin.addInitScript(demoOn)
 const page = await admin.newPage()
 watch(page, 'admin')
 const shot = name => page.screenshot({ path: `${SHOTS}${name}.png` })
@@ -149,7 +143,7 @@ try {
     await page.waitForURL('**/admin/payments', { timeout: 15000 })
   })
 
-  // ---------- demo screens ----------
+  // ---------- screens ----------
   await check('T18', async () => {
     const seg = page.locator('.filters .seg')
     const text = (await seg.innerText()).replace(/\s+/g, ' ')
@@ -550,7 +544,6 @@ try {
 
   // ---------- regular user ----------
   const userCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
-  await userCtx.addInitScript(demoOn)
   const up = await userCtx.newPage()
   watch(up, 'user')
 
@@ -670,7 +663,7 @@ try {
     })
 
   await check('T48', async () => {
-    // live mode (demo off) talks to the payment api. the server has no hard delete for payments,
+    // the panel talks to the payment api. the server has no hard delete for payments,
     // so instead of writing to it the payment endpoints answer from here and every write is recorded
     const ctx = await prefsContext()
     const p = await ctx.newPage()
@@ -765,60 +758,6 @@ try {
     return `light body bg ${bg}`
   })
 
-  await check('T50', async () => {
-    // demo mode: the actions change the demo data in this browser only
-    const ctx = await prefsContext()
-    const p = await ctx.newPage()
-    watch(p, 'demo')
-    await p.goto(`${BASE}/admin/settings`)
-    await hydrated(p)
-    await p.getByRole('button', { name: /Демо-режим/ }).click()
-    await p.getByRole('switch', { name: 'Демо-режим' }).click()
-    await p.locator('aside .demo').waitFor()
-
-    // Обзор: paying the overdue rent removes the banner
-    await p.locator('aside.sidebar').getByRole('link', { name: 'Обзор' }).click()
-    await p.waitForURL('**/admin/overview')
-    await p.getByRole('button', { name: 'Отметить оплату' }).click()
-    await p.locator('.banner').waitFor({ state: 'detached', timeout: 5000 })
-
-    // Периоды: a paid row opens the popover too, and the mark can be taken off
-    await p.locator('aside.sidebar').getByRole('link', { name: 'Периоды' }).click()
-    await p.waitForURL('**/admin/payments')
-    await rowsOf(p).filter({ hasText: 'Аренда офиса' }).click()
-    await p.getByRole('button', { name: 'Снять отметку' }).click()
-    await rowsOf(p).filter({ hasText: 'Аренда офиса' }).filter({ hasText: /Просроч/ }).waitFor({ timeout: 5000 })
-
-    // Регулярные: stop one, add one
-    await p.locator('aside.sidebar').getByRole('link', { name: 'Регулярные' }).click()
-    await p.waitForURL('**/admin/recurring')
-    const before = await rowsOf(p).count()
-    await rowsOf(p).filter({ hasText: 'Почта Workspace' }).getByRole('button', { name: 'Прекратить' }).click()
-    await rowsOf(p).filter({ hasText: 'Почта Workspace' }).getByRole('button', { name: 'Точно прекратить?' }).click()
-    await p.waitForFunction(n => document.querySelectorAll('.table .row:not(.head)').length === n - 1, before)
-    await p.getByRole('button', { name: 'Новый платёж' }).click()
-    const modal = modalTitled(p, 'Новый регулярный платёж')
-    await modal.getByRole('button', { name: 'Добавить платёж' }).click()
-    await modal.getByText('Введите название').waitFor()
-    await modal.getByLabel('Название').fill('Тестовый склад')
-    await modal.getByLabel('Сумма').fill('45000')
-    await modal.getByLabel('Ответственный').click()
-    await modal.locator('.menu .option').first().click()
-    await modal.getByRole('button', { name: 'Добавить платёж' }).click()
-    await modal.waitFor({ state: 'detached' })
-    await rowsOf(p).filter({ hasText: 'Тестовый склад' }).waitFor()
-
-    // reset brings the seed data back
-    await p.locator('aside.sidebar').getByRole('link', { name: 'Настройки' }).click()
-    await p.waitForURL('**/admin/settings')
-    await p.getByRole('button', { name: /Демо-режим/ }).click()
-    await p.getByRole('button', { name: 'Сбросить', exact: true }).click()
-    await p.locator('aside.sidebar').getByRole('link', { name: 'Регулярные' }).click()
-    await p.waitForURL('**/admin/recurring')
-    assert(await rowsOf(p).filter({ hasText: 'Тестовый склад' }).count() === 0, 'reset kept the added payment')
-    await ctx.close()
-  })
-
   await check('T51', async () => {
     // chat under the ask bar: grows with the answer, fits the screen, turns into a button on click outside
     const ctx = await prefsContext()
@@ -834,33 +773,6 @@ try {
     await p.waitForFunction(() => document.querySelector('.chat .answer')?.textContent?.trim(), null, { timeout: 30000 })
     const live = await p.locator('.chat .answer').last().innerText()
 
-    // demo answers come from the demo data
-    await p.evaluate(() => {
-      const prefs = JSON.parse(localStorage.getItem('invoice-keeper:prefs') ?? '{}')
-      localStorage.setItem('invoice-keeper:prefs', JSON.stringify({ ...prefs, demoMode: true }))
-    })
-    await p.reload()
-    await hydrated(p)
-    await bar.fill('Кто отвечает за аренду?')
-    await bar.press('Enter')
-    await p.locator('.chat .answer', { hasText: 'Ольга Иванова' }).waitFor({ timeout: 5000 })
-    const questions = ['Что просрочено?', 'Сколько платим в рублях?', 'Что оплатить на этой неделе?', 'Сколько платим в долларах в этом месяце?']
-    // twice, so the chat gets longer than the screen
-    for (const q of [...questions, ...questions]) {
-      await bar.fill(q)
-      await bar.press('Enter')
-      await p.waitForFunction(() => !document.querySelector('.chat .pending, .chat .typing'))
-    }
-    const box = await p.locator('.chat').boundingBox()
-    assert(box.width > 300 && box.width <= 1920 / 4 + 2, `chat width ${box.width}`)
-    assert(box.y + box.height <= 1080, 'chat goes below the screen')
-    assert(await p.locator('.chat .thumb').isVisible(), 'no scrollbar on a long chat')
-
-    await p.mouse.click(700, 900)
-    const resume = p.getByRole('button', { name: /Чат с ассистентом/ })
-    await resume.waitFor({ timeout: 3000 })
-    await resume.click()
-    assert(await p.locator('.chat .mine').count() === 9, 'chat history lost after reopening')
     await p.screenshot({ path: `${SHOTS}A1-chat.png` })
     await ctx.close()
     return `live: ${live.slice(0, 60)}`

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Period } from '~/utils/demo'
+import type { Period } from '~/utils/periods'
 
 // canMark: false hides the button (somebody else's payment, for a user)
 // others: the rest of that day's payments, a click shows one of them here
