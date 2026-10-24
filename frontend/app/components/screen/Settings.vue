@@ -123,10 +123,12 @@ const assistantText = { checking: 'проверяем…', ok: 'онлайн', d
   margin-right: -32px;
 }
 
-/* rows with hairlines between them, no boxes */
+/* rows with hairlines between them, no boxes.
+   pulled up so its top line lies right on the header's line instead of making a second one */
 .list {
   display: flex;
   flex-direction: column;
+  margin-top: -19px;
   border-top: 1px solid var(--line);
 }
 
