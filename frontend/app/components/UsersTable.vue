@@ -5,6 +5,12 @@ const props = defineProps<{ users: User[], loading?: boolean }>()
 defineEmits<{ edit: [user: User] }>()
 
 const { visible, hasMore, sentinel } = useLazyList(() => props.users)
+
+// «Отвечает за»: the user's running recurring payments
+const payments = usePayments()
+onMounted(payments.load)
+const responsibleFor = (id?: string) => payments.templates.value.filter(item => !item.ended && item.assigneeId === id)
+const countText = (n: number) => `${n} ${plural(n, ['платёж', 'платежа', 'платежей'])}`
 </script>
 
 <template>
@@ -14,7 +20,8 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
       <span>Роль</span>
       <span>Должность</span>
       <span>Отвечает за</span>
-      <span>Telegram</span>
+      <!-- the server gives telegram only for yourself (/me/telegram), not for each user -->
+      <span class="soon text-action" :title="'Появится, когда сервер начнёт отдавать привязку Telegram для каждого пользователя'">Telegram</span>
       <span>Создан</span>
       <span />
     </div>
@@ -42,8 +49,11 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
       </span>
       <span v-if="user.persona">{{ user.persona.name }}</span>
       <span v-else class="muted">—</span>
-      <!-- backend has no payments or telegram yet -->
-      <span class="muted">—</span>
+      <span
+        v-if="responsibleFor(user.id).length"
+        :title="responsibleFor(user.id).map(item => item.title).join(', ')"
+      >{{ countText(responsibleFor(user.id).length) }}</span>
+      <span v-else class="muted">—</span>
       <span class="muted">—</span>
       <span class="mono soft">{{ formatDate(user.created_at) }}</span>
       <!-- admin comes from .env, can't be edited here -->
