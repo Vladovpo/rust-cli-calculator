@@ -44,14 +44,10 @@ async function signOut() {
 const user = computed(() => ({
   initials: initials(me.value?.full_name),
   name: me.value?.full_name ?? '',
-  // admin always comes from .env, users show their persona
   role: me.value?.role === 'admin'
-    ? 'admin · .env'
+    ? 'admin'
     : ['user', me.value?.persona?.name].filter(Boolean).join(' · '),
 }))
-
-// backend has no bot status endpoint yet, so it's always online for now
-const botOnline = ref(true)
 
 const { prefs, switchTheme } = usePrefs()
 const demo = useDemo()
@@ -96,9 +92,6 @@ function toggleTheme(e: MouseEvent) {
     </NuxtLink>
 
     <div class="status">
-      <p class="bot mono">
-        <span class="bot-dot" :class="{ offline: !botOnline }" />TG-бот · {{ botOnline ? 'онлайн' : 'оффлайн' }}
-      </p>
       <button
         type="button"
         class="theme"
@@ -239,20 +232,12 @@ function toggleTheme(e: MouseEvent) {
 .status {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin: auto 4px 12px 12px;
 }
 
 .demo + .status {
   margin-top: 0;
-}
-
-.bot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--ink-2);
 }
 
 .theme {
@@ -271,17 +256,6 @@ function toggleTheme(e: MouseEvent) {
 .theme:hover {
   color: var(--ink);
   border-color: var(--line-strong);
-}
-
-.bot-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-}
-
-.bot-dot.offline {
-  background: var(--red);
 }
 
 .me {
