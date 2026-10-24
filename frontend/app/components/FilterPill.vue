@@ -1,5 +1,6 @@
 <!-- a filter pill for the bar above a table: «Сумма: от 1 000 ₽». a click opens a small menu with
-     a text field (default), the values to pick from (`options`), or two fields «с / по» (`range`).
+     a text field (default), the values to pick from (`options`), or two rows «с / по» (`range`):
+     dates are picked in the calendar, amounts are typed.
      '' means no filter, the cross on the pill takes it off -->
 <script setup lang="ts">
 import type { DropdownOption } from '~/components/ui/Dropdown.vue'
@@ -72,9 +73,7 @@ function reset() {
     <Transition name="menu">
       <div v-if="open" class="menu">
         <template v-if="options">
-          <button type="button" class="option" :class="{ active: !model }" @click="pick('')">
-            <span>Все</span><span class="check">{{ model ? '' : '✓' }}</span>
-          </button>
+          <button type="button" class="option muted" @click="pick('')">все</button>
           <button
             v-for="option in options"
             :key="option.value"
@@ -91,44 +90,51 @@ function reset() {
 
         <p v-else-if="blocked" class="blocked">{{ blocked }}</p>
 
-        <template v-else-if="range">
-          <div class="range">
-            <label class="range-row">
-              <span class="range-label">{{ range === 'date' ? 'С' : 'От' }}</span>
-              <UiInput
-                v-model="from"
-                :type="range === 'date' ? 'date' : 'text'"
-                :filter="range === 'amount' ? moneyFilter : undefined"
-                :suffix="range === 'amount' ? unit : ''"
-                :inputmode="range === 'amount' ? 'decimal' : undefined"
-                mono
-                class="range-input"
-                :aria-label="`${label}: ${range === 'date' ? 'с' : 'от'}`"
-                @keydown.enter="open = false"
-              />
-            </label>
-            <label class="range-row">
-              <span class="range-label">{{ range === 'date' ? 'По' : 'До' }}</span>
-              <UiInput
-                v-model="to"
-                :type="range === 'date' ? 'date' : 'text'"
-                :filter="range === 'amount' ? moneyFilter : undefined"
-                :suffix="range === 'amount' ? unit : ''"
-                :inputmode="range === 'amount' ? 'decimal' : undefined"
-                mono
-                class="range-input"
-                :aria-label="`${label}: ${range === 'date' ? 'по' : 'до'}`"
-                @keydown.enter="open = false"
-              />
-            </label>
-          </div>
-          <button v-if="active" type="button" class="clear" @click="reset">Сбросить</button>
+        <!-- dates: two rows that open the usual calendar, nothing to type -->
+        <template v-else-if="range === 'date'">
+          <button type="button" class="option muted" @click="reset">все</button>
+          <UiDatePicker v-model="from" bare prefix="С" placeholder="любая дата" class="range-row" />
+          <UiDatePicker v-model="to" bare prefix="По" placeholder="любая дата" class="range-row" />
         </template>
 
-        <template v-else>
-          <UiInput v-model="model" class="text" placeholder="Содержит…" :aria-label="label" maxlength="100" @keydown.enter="open = false" />
-          <button v-if="model" type="button" class="clear" @click="reset">Сбросить</button>
+        <template v-else-if="range">
+          <button type="button" class="option muted" @click="reset">все</button>
+          <label class="field-row">
+            <span class="range-label">От</span>
+            <UiInput
+              v-model="from"
+              :filter="moneyFilter"
+              :suffix="unit"
+              inputmode="decimal"
+              placeholder="0"
+              mono
+              bare
+              class="range-input"
+              :aria-label="`${label}: от`"
+              @keydown.enter="open = false"
+            />
+          </label>
+          <label class="field-row">
+            <span class="range-label">До</span>
+            <UiInput
+              v-model="to"
+              :filter="moneyFilter"
+              :suffix="unit"
+              inputmode="decimal"
+              placeholder="0"
+              mono
+              bare
+              class="range-input"
+              :aria-label="`${label}: до`"
+              @keydown.enter="open = false"
+            />
+          </label>
         </template>
+
+        <label v-else class="field-row">
+          <UiIcon name="search" :size="14" class="search" />
+          <UiInput v-model="model" bare class="text" placeholder="Содержит…" :aria-label="label" maxlength="100" @keydown.enter="open = false" />
+        </label>
       </div>
     </Transition>
   </span>
@@ -251,11 +257,6 @@ function reset() {
   right: 0;
 }
 
-.text {
-  width: 220px;
-  margin: 4px;
-}
-
 .option {
   display: flex;
   align-items: center;
@@ -279,6 +280,10 @@ function reset() {
   font-weight: 500;
 }
 
+.option.muted {
+  color: var(--ink-3);
+}
+
 .meta {
   margin-left: auto;
   font-size: 12px;
@@ -295,17 +300,21 @@ function reset() {
   margin-left: 0;
 }
 
-.range {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 4px;
-}
-
-.range-row {
+/* a field in the menu: no frame and no fill, just a row like the options */
+.field-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
+  padding-left: 10px;
+}
+
+.search {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+
+.text {
+  width: 220px;
 }
 
 .range-label {
@@ -315,7 +324,11 @@ function reset() {
 }
 
 .range-input {
-  width: 190px;
+  width: 170px;
+}
+
+.range-row {
+  width: 230px;
 }
 
 /* why the filter can't be used right now */
@@ -325,16 +338,5 @@ function reset() {
   font-size: 13px;
   line-height: 18px;
   color: var(--ink-2);
-}
-
-.clear {
-  align-self: flex-start;
-  margin: 2px 10px 6px;
-  padding: 0;
-  background: none;
-  border: 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--accent-ink);
 }
 </style>

@@ -90,14 +90,17 @@ async function personaSaved() {
 </template>
 
 <style scoped>
+/* when the window is narrow the positions card goes under the table, so the table keeps its full width */
 .layout {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 16px;
 }
 
 .layout > :first-child {
-  flex: 1;
+  flex: 1 1 680px;
+  min-width: 0;
 }
 
 .load-error {

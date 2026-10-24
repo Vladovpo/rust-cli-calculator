@@ -73,7 +73,11 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.items)
 
 .row {
   display: grid;
-  grid-template-columns: 42px 98px 230px 150px 150px 100px 1fr 112px;
+  /* every column has its least width and a share of what's left, so the list fills the page evenly */
+  grid-template-columns:
+    42px minmax(80px, 0.8fr) minmax(190px, 2.2fr) minmax(130px, 1.4fr)
+    minmax(110px, 1.2fr) minmax(56px, 0.6fr) minmax(150px, 1.5fr) 112px;
+  column-gap: 12px;
   align-items: center;
   height: 60px;
   padding: 0 12px;

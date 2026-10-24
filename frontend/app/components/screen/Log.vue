@@ -240,7 +240,10 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
 
 .row {
   display: grid;
-  grid-template-columns: 130px 170px 210px 150px minmax(0, 1fr) 96px 96px;
+  /* every column has its least width and a share of what's left */
+  grid-template-columns:
+    minmax(120px, 1fr) minmax(140px, 1.3fr) minmax(170px, 1.6fr) minmax(120px, 1.2fr)
+    minmax(0, 2.2fr) minmax(84px, 0.8fr) minmax(90px, 0.8fr);
   align-items: center;
   column-gap: 12px;
   min-height: 56px;
@@ -249,7 +252,9 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
 }
 
 .mine .row {
-  grid-template-columns: 130px 230px 170px minmax(0, 1fr) 96px 96px;
+  grid-template-columns:
+    minmax(120px, 1fr) minmax(170px, 1.6fr) minmax(120px, 1.2fr)
+    minmax(0, 2.2fr) minmax(84px, 0.8fr) minmax(90px, 0.8fr);
 }
 
 /* header: plain small text, the hairline under it does the separating */

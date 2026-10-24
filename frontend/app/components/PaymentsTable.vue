@@ -186,11 +186,20 @@ const receiptCount = (period: Period) => receipts.byPeriod.value[period.id]?.len
 .row {
   position: relative;
   display: grid;
-  grid-template-columns: 36px 200px 150px 110px 140px 90px 170px 90px 74px 64px;
+  /* every column has its least width and a share of what's left, so the table fills the page evenly */
+  grid-template-columns:
+    28px minmax(104px, 2.2fr) minmax(112px, 1.4fr) minmax(88px, 1fr) minmax(104px, 1.1fr)
+    56px minmax(176px, 1.6fr) minmax(84px, 1fr) minmax(68px, 0.8fr) 52px;
+  column-gap: 12px;
   align-items: center;
   height: 56px;
   padding: 0 12px;
   border-top: 1px solid var(--line);
+}
+
+/* a cell may get narrower than its text, long names end with «…» */
+.row > * {
+  min-width: 0;
 }
 
 /* header: plain small text, the hairline under it does the separating.
@@ -222,8 +231,11 @@ const receiptCount = (period: Period) => receipts.byPeriod.value[period.id]?.len
 
 .title {
   display: block;
+  overflow: hidden;
   font-size: 14px;
   font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .small {
@@ -236,7 +248,7 @@ const receiptCount = (period: Period) => receipts.byPeriod.value[period.id]?.len
 }
 
 .currency {
-  padding-left: 20px;
+  padding-left: 8px;
 }
 
 .red { color: var(--red); }

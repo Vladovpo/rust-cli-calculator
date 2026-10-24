@@ -185,12 +185,21 @@ function showList(user: User, e: Event) {
 
 .row {
   display: grid;
-  grid-template-columns: 170px 120px 120px 88px 110px 90px 1fr;
+  /* every column has its least width and a share of what's left, so the table fills the card evenly */
+  grid-template-columns:
+    minmax(120px, 2fr) minmax(108px, 1.2fr) minmax(72px, 1.3fr) minmax(72px, 1fr)
+    minmax(80px, 1.2fr) minmax(76px, 1fr) minmax(92px, 0.9fr);
+  column-gap: 12px;
   align-items: center;
   height: 60px;
   padding: 0 16px;
   border-top: 1px solid var(--line);
   white-space: nowrap;
+}
+
+/* a cell may get narrower than its text, long names end with «…» */
+.row > * {
+  min-width: 0;
 }
 
 /* header: plain small text, the hairline under it does the separating */
@@ -210,8 +219,10 @@ function showList(user: User, e: Event) {
 
 .name {
   display: block;
+  overflow: hidden;
   font-size: 14px;
   font-weight: 500;
+  text-overflow: ellipsis;
 }
 
 .login {

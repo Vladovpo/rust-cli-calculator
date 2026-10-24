@@ -110,7 +110,8 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
 .row {
   display: grid;
   /* the spare width is shared between the columns, so the gaps stay even */
-  grid-template-columns: 36px minmax(190px, 2.2fr) minmax(100px, 1fr) 80px minmax(140px, 1.4fr) minmax(140px, 1.4fr) minmax(100px, 1fr) minmax(100px, 1fr);
+  grid-template-columns: 28px minmax(120px, 2.2fr) minmax(100px, 1fr) 56px minmax(100px, 1.2fr) minmax(116px, 1.4fr) minmax(104px, 1fr) minmax(84px, 1fr);
+  column-gap: 12px;
   align-items: center;
   height: 56px;
   padding: 0 12px;
@@ -118,8 +119,13 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
   white-space: nowrap;
 }
 
+/* a cell may get narrower than its text, long names end with «…» */
+.row > * {
+  min-width: 0;
+}
+
 .admin .row {
-  grid-template-columns: 36px minmax(190px, 2.2fr) minmax(100px, 1fr) 80px minmax(140px, 1.4fr) minmax(140px, 1.4fr) minmax(100px, 1fr) minmax(100px, 1fr) 130px;
+  grid-template-columns: 28px minmax(120px, 2.2fr) minmax(100px, 1fr) 56px minmax(100px, 1.2fr) minmax(116px, 1.4fr) minmax(104px, 1fr) minmax(84px, 1fr) minmax(124px, 1fr);
 }
 
 /* header: plain small text, the hairline under it does the separating.
@@ -136,8 +142,10 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
 
 .title {
   display: block;
+  overflow: hidden;
   font-size: 14px;
   font-weight: 500;
+  text-overflow: ellipsis;
 }
 
 .small {
@@ -150,7 +158,7 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
 }
 
 .currency {
-  padding-left: 20px;
+  padding-left: 8px;
 }
 
 /* stopped payment: everything grey except who pays */

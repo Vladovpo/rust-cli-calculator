@@ -3,7 +3,12 @@
 const props = withDefaults(defineProps<{
   // which day is "today"
   today?: string
-}>(), { today: undefined })
+  // small grey word in front of the date, e.g. «С»
+  prefix?: string
+  placeholder?: string
+  // looks like a menu row instead of a field, for the filter menus
+  bare?: boolean
+}>(), { today: undefined, prefix: '', placeholder: 'ДД.ММ.ГГГГ', bare: false })
 
 const model = defineModel<string>({ default: '' })
 // set by a surrounding UiField so its label points here
@@ -76,12 +81,13 @@ useClickOutside(root, () => { open.value = false }, open)
       :id="fieldId"
       type="button"
       class="input mono"
-      :class="{ open }"
+      :class="{ open, bare }"
       :aria-expanded="open"
       @click="toggle"
       @keydown.down.prevent="openCalendar"
     >
-      <span class="value" :class="{ muted: !model }">{{ model ? toRu(model) : 'ДД.ММ.ГГГГ' }}</span>
+      <span v-if="prefix" class="prefix">{{ prefix }}</span>
+      <span class="value" :class="{ muted: !model }">{{ model ? toRu(model) : placeholder }}</span>
       <UiIcon name="down" :size="14" class="caret" :class="{ flip: open }" />
     </button>
 
@@ -156,6 +162,39 @@ useClickOutside(root, () => { open.value = false }, open)
   border-color: var(--ink-2);
   box-shadow: 0 0 0 3px var(--subtle);
   animation: focus-ring 0.45s var(--ease-out);
+}
+
+.input.bare {
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  box-shadow: none;
+  animation: none;
+  transition: background-color 0.2s ease;
+}
+
+.input.bare:hover,
+.input.bare.open,
+.input.bare:focus-visible {
+  background: var(--subtle);
+}
+
+.prefix {
+  width: 22px;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.input.bare .value {
+  margin-right: auto;
+}
+
+.input.bare .value.muted {
+  font-family: var(--sans);
 }
 
 .caret {
