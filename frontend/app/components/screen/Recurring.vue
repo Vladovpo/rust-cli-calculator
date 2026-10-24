@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { RecurringSearchParams } from '~/types/api'
 import type { Template } from '~/utils/periods'
+import { noTemplateColumnFilters } from '~/utils/periods'
 
 const { isAdmin } = useRole()
 const showNewPayment = ref(false)
@@ -22,8 +24,39 @@ const assignee = ref('')
 const assigneeOptions = computed(() => payments.assignees.value
   .map(({ person }) => ({ value: person.name, label: person.short, meta: person.persona })))
 
+// the filters in the column titles. with any of them set the server does the search,
+// sending the filters above along (currencies, who pays); the status is still picked here
+const columns = ref(noTemplateColumnFilters())
+const columnsOn = computed(() => Object.values(columns.value).some(value => value.trim()))
+const symbols: Record<string, string> = { RUB: '₽', USD: '$', EUR: '€' }
+// the server compares amounts only within one currency
+const oneCurrency = computed(() => (currencies.value.length === 1 ? currencies.value[0]! : ''))
+const minor = (text: string) => (text ? Math.round(parseMoney(text) * 100) : undefined)
+
+const search = useServerSearch(() => {
+  if (!columnsOn.value) return null
+  const c = columns.value
+  const id = payments.assignees.value.find(item => item.person.name === assignee.value)?.id
+  const params: RecurringSearchParams = {
+    q: c.title.trim() || undefined,
+    currency: currencies.value,
+    assignee_id: id ? [id] : undefined,
+    frequency: c.frequency ? [c.frequency] : undefined,
+    amount_min: oneCurrency.value ? minor(c.amountFrom) : undefined,
+    amount_max: oneCurrency.value ? minor(c.amountTo) : undefined,
+    next_due_from: c.nextFrom || undefined,
+    next_due_to: c.nextTo || undefined,
+    include_stopped: true,
+    limit: 200,
+  }
+  return params
+}, payments.searchTemplates)
+
 // currency and assignee first, the status filter goes on top of that
-const filtered = computed(() => payments.templates.value.filter(item => currencies.value.includes(item.currency)
+const base = computed<Template[]>(() => (columnsOn.value
+  ? search.result.value?.templates ?? []
+  : payments.templates.value))
+const filtered = computed(() => base.value.filter(item => currencies.value.includes(item.currency)
   && (!assignee.value || item.who.name === assignee.value)))
 
 // no counts until the payments arrive, a row of zeros would look like there is nothing
@@ -45,14 +78,23 @@ const statusModel = transitioned(status)
 const currenciesModel = transitioned(currencies)
 const assigneeModel = transitioned(assignee)
 
-const isFiltered = computed(() => status.value !== 'active' || currencies.value.length < 3 || !!assignee.value)
+const isFiltered = computed(() => status.value !== 'active' || currencies.value.length < 3 || !!assignee.value || columnsOn.value)
 function resetFilters() {
   withTransition(() => {
     status.value = 'active'
     currencies.value = ['RUB', 'USD', 'EUR']
     assignee.value = ''
+    columns.value = noTemplateColumnFilters()
   })
 }
+
+// grey rows: the first load, or the first answer of a search
+const loadingNow = computed(() => payments.pending.value || (columnsOn.value && search.searching.value && !search.result.value))
+
+// the server found more than one page: say so instead of quietly showing part of it
+const more = computed(() => (columnsOn.value && search.result.value && search.result.value.total > search.result.value.templates.length
+  ? search.result.value.total - search.result.value.templates.length
+  : 0))
 
 function stop(template: Template) {
   payments.stop(template).catch(() => {})
@@ -78,19 +120,31 @@ function stop(template: Template) {
       <UiDropdown v-model="assigneeModel" :options="assigneeOptions" prefix="Ответственный:" placeholder="все" compact class="assignee" />
     </div>
 
-    <RecurringTable v-if="payments.pending.value" :templates="[]" loading />
-    <UiState v-else-if="payments.loadError.value" kind="error" class="state" @retry="payments.load">
+    <UiState v-if="payments.loadError.value" kind="error" class="state alone" @retry="payments.load">
       Не удалось загрузить: {{ payments.loadError.value }}
     </UiState>
-    <UiState v-else-if="!shown.length && isFiltered" class="state">
-      Под эти фильтры нет ни одного платежа.
-      <br>
-      <button type="button" class="reset" @click="resetFilters">Сбросить фильтры</button>
-    </UiState>
-    <UiState v-else-if="!shown.length" class="state">
-      {{ isAdmin ? 'Регулярных платежей пока нет. Добавьте первый — «Новый платёж».' : 'Регулярных платежей пока нет.' }}
-    </UiState>
-    <RecurringTable v-else :templates="shown" @stop="stop" />
+    <!-- the table stays even when nothing matched: its column titles are where the filters are -->
+    <template v-else>
+      <RecurringTable
+        v-model:filters="columns"
+        :templates="loadingNow ? [] : shown"
+        :loading="loadingNow"
+        :unit="oneCurrency ? symbols[oneCurrency] : ''"
+        @stop="stop"
+      />
+      <UiState v-if="columnsOn && search.error.value" kind="error" class="state" @retry="search.retry">
+        Не удалось найти платежи: {{ search.error.value }}
+      </UiState>
+      <UiState v-else-if="!loadingNow && !shown.length && isFiltered" class="state">
+        Под эти фильтры нет ни одного платежа.
+        <br>
+        <button type="button" class="reset" @click="resetFilters">Сбросить фильтры</button>
+      </UiState>
+      <UiState v-else-if="!loadingNow && !shown.length" class="state">
+        {{ isAdmin ? 'Регулярных платежей пока нет. Добавьте первый — «Новый платёж».' : 'Регулярных платежей пока нет.' }}
+      </UiState>
+      <p v-if="more" class="more">Ещё {{ more }} не показаны: уточните фильтры</p>
+    </template>
 
     <p v-if="!isAdmin" class="read-only">
       <span class="dot" />
@@ -117,6 +171,13 @@ function stop(template: Template) {
   min-width: 220px;
   max-width: 280px;
   margin-left: auto;
+}
+
+.more {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
 }
 
 .reset {
@@ -149,8 +210,12 @@ function stop(template: Template) {
   width: 160px;
 }
 
+/* under the table, its bottom hairline is already the line above */
 .state {
-  border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
+}
+
+.state.alone {
+  border-top: 1px solid var(--line);
 }
 </style>

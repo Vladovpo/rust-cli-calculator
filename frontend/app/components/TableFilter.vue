@@ -1,31 +1,56 @@
-<!-- a column title that filters its column: a click opens a small menu with a text field,
-     or with the values to pick from when `options` are given. '' means no filter -->
+<!-- a column title that filters its column. a click opens a small menu with:
+     a text field (default), the values to pick from (`options`), or two fields «с / по» (`range`).
+     '' means no filter -->
 <script setup lang="ts">
 import type { DropdownOption } from '~/components/ui/Dropdown.vue'
 
 const props = withDefaults(defineProps<{
   label: string
   options?: DropdownOption[]
+  // two fields: dates (YYYY-MM-DD) or amounts (in rubles / dollars / euros)
+  range?: 'date' | 'amount'
+  // the sign after the amount fields, e.g. ₽
+  unit?: string
+  // the filter can't be used right now, this says why (e.g. an amount needs one currency)
+  blocked?: string
   // the menu opens to the left, for columns aligned to the right
   right?: boolean
   // the server can't filter by this column yet: shown as «скоро», can't be opened
   soon?: boolean
-}>(), { options: undefined, right: false, soon: false })
+}>(), { options: undefined, range: undefined, unit: '', blocked: '', right: false, soon: false })
 
 const model = defineModel<string>({ default: '' })
+const from = defineModel<string>('from', { default: '' })
+const to = defineModel<string>('to', { default: '' })
+const active = computed(() => !!(model.value || from.value || to.value))
+
 const open = ref(false)
 const root = ref<HTMLElement>()
 useClickOutside(root, () => { open.value = false }, open)
 
-// the text field is ready to type into as soon as the menu opens
+// the first field is ready to type into as soon as the menu opens
 watch(open, (value) => {
-  if (value && !props.options) nextTick(() => root.value?.querySelector('input')?.focus())
+  if (value && !props.options) nextTick(() => root.value?.querySelector<HTMLInputElement>('.menu input')?.focus())
 })
 
 const current = computed(() => props.options?.find(option => option.value === model.value))
 
+// what's set, for the tooltip: «Срок: с 01.10.2026 по 15.10.2026»
+const shown = (value: string) => (props.range === 'date' ? toRu(value) : `${value} ${props.unit}`.trim())
+const summary = computed(() => {
+  if (props.range) return [from.value && `с ${shown(from.value)}`, to.value && `по ${shown(to.value)}`].filter(Boolean).join(' ')
+  return current.value?.label ?? model.value
+})
+
 function pick(value: string) {
   model.value = value
+  open.value = false
+}
+
+function reset() {
+  model.value = ''
+  from.value = ''
+  to.value = ''
   open.value = false
 }
 </script>
@@ -35,12 +60,12 @@ function pick(value: string) {
     <button
       type="button"
       class="trigger"
-      :class="{ active: model, open, soon, 'text-action': soon }"
+      :class="{ active, open, soon, 'text-action': soon }"
       :disabled="soon"
-      :title="soon ? 'Фильтр появится, когда сервер научится фильтровать' : model ? `${label}: ${current?.label ?? model}` : `Фильтр: ${label.toLowerCase()}`"
+      :title="soon ? 'Фильтр появится, когда сервер научится фильтровать' : active ? `${label}: ${summary}` : `Фильтр: ${label.toLowerCase()}`"
       @click="open = !open"
     >
-      <span v-if="model" class="dot" />{{ label }}
+      <span v-if="active" class="dot" />{{ label }}
       <UiIcon v-if="!soon" name="down" :size="12" class="caret" :class="{ flip: open }" />
     </button>
 
@@ -64,9 +89,45 @@ function pick(value: string) {
           </button>
         </template>
 
+        <p v-else-if="blocked" class="blocked">{{ blocked }}</p>
+
+        <template v-else-if="range">
+          <div class="range">
+            <label class="range-row">
+              <span class="range-label">{{ range === 'date' ? 'С' : 'От' }}</span>
+              <UiInput
+                v-model="from"
+                :type="range === 'date' ? 'date' : 'text'"
+                :filter="range === 'amount' ? moneyFilter : undefined"
+                :suffix="range === 'amount' ? unit : ''"
+                :inputmode="range === 'amount' ? 'decimal' : undefined"
+                mono
+                class="range-input"
+                :aria-label="`${label}: ${range === 'date' ? 'с' : 'от'}`"
+                @keydown.enter="open = false"
+              />
+            </label>
+            <label class="range-row">
+              <span class="range-label">{{ range === 'date' ? 'По' : 'До' }}</span>
+              <UiInput
+                v-model="to"
+                :type="range === 'date' ? 'date' : 'text'"
+                :filter="range === 'amount' ? moneyFilter : undefined"
+                :suffix="range === 'amount' ? unit : ''"
+                :inputmode="range === 'amount' ? 'decimal' : undefined"
+                mono
+                class="range-input"
+                :aria-label="`${label}: ${range === 'date' ? 'по' : 'до'}`"
+                @keydown.enter="open = false"
+              />
+            </label>
+          </div>
+          <button v-if="active" type="button" class="clear" @click="reset">Сбросить</button>
+        </template>
+
         <template v-else>
           <UiInput v-model="model" class="text" placeholder="Содержит…" :aria-label="label" maxlength="100" @keydown.enter="open = false" />
-          <button v-if="model" type="button" class="clear" @click="pick('')">Сбросить</button>
+          <button v-if="model" type="button" class="clear" @click="reset">Сбросить</button>
         </template>
       </div>
     </Transition>
@@ -198,6 +259,38 @@ function pick(value: string) {
 
 .meta + .check {
   margin-left: 0;
+}
+
+.range {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px;
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range-label {
+  width: 22px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.range-input {
+  width: 190px;
+}
+
+/* why the filter can't be used right now */
+.blocked {
+  max-width: 240px;
+  margin: 6px 10px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
 }
 
 .clear {

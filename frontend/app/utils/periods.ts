@@ -91,3 +91,31 @@ export interface Template {
   nextDue?: string
   ended?: boolean
 }
+
+// the filters in the column titles of «Периоды», '' = off.
+// amounts are typed in rubles / dollars / euros, dates are YYYY-MM-DD
+export interface PeriodColumnFilters {
+  title: string
+  dueFrom: string
+  dueTo: string
+  amountFrom: string
+  amountTo: string
+  paidFrom: string
+  paidTo: string
+}
+
+export const noPeriodColumnFilters = (): PeriodColumnFilters =>
+  ({ title: '', dueFrom: '', dueTo: '', amountFrom: '', amountTo: '', paidFrom: '', paidTo: '' })
+
+// the filters in the column titles of «Регулярные», '' = off. frequency is the server's: weekly | monthly
+export interface TemplateColumnFilters {
+  title: string
+  amountFrom: string
+  amountTo: string
+  frequency: string
+  nextFrom: string
+  nextTo: string
+}
+
+export const noTemplateColumnFilters = (): TemplateColumnFilters =>
+  ({ title: '', amountFrom: '', amountTo: '', frequency: '', nextFrom: '', nextTo: '' })

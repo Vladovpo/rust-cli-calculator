@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CurrencyTotal, Period } from '~/utils/periods'
+import type { CurrencyTotal, Period, PeriodColumnFilters } from '~/utils/periods'
 
 const props = withDefaults(defineProps<{
   periods: Period[]
@@ -7,12 +7,13 @@ const props = withDefaults(defineProps<{
   filtered?: boolean
   month?: string
   loading?: boolean
-}>(), { month: 'октябрь' })
+  // the sign of the one picked currency, '' when there are several (then amounts can't be filtered)
+  unit?: string
+}>(), { month: 'октябрь', unit: '' })
 defineEmits<{ reset: [] }>()
 
-// a filter per column, '' = off. they will go to the server as query params,
-// it can't filter yet, so the column titles show «скоро» for now
-const filters = reactive({ title: '', due: '', amount: '', paidAt: '' })
+// a filter per column, '' = off. the screen sends them to the server (GET /payment-occurrences/search)
+const filters = defineModel<PeriodColumnFilters>('filters', { required: true })
 
 const payments = usePayments()
 const { visible, hasMore, sentinel } = useLazyList(() => props.periods)
@@ -51,13 +52,21 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
   <div class="table">
     <div class="row head">
       <span class="mono muted">№</span>
-      <TableFilter v-model="filters.title" label="Название" soon />
+      <TableFilter v-model="filters.title" label="Название" />
       <span>Ответственный</span>
-      <TableFilter v-model="filters.due" label="Срок" soon />
-      <TableFilter v-model="filters.amount" label="Сумма" right soon />
+      <TableFilter v-model:from="filters.dueFrom" v-model:to="filters.dueTo" label="Срок" range="date" />
+      <TableFilter
+        v-model:from="filters.amountFrom"
+        v-model:to="filters.amountTo"
+        label="Сумма"
+        range="amount"
+        :unit="unit"
+        :blocked="unit ? '' : 'Сумму можно искать в одной валюте: оставьте одну в фильтре сверху'"
+        right
+      />
       <span class="currency">Валюта</span>
       <span>Статус</span>
-      <TableFilter v-model="filters.paidAt" label="Дата оплаты" soon />
+      <TableFilter v-model:from="filters.paidFrom" v-model:to="filters.paidTo" label="Дата оплаты" range="date" />
       <span class="right">Просрочка</span>
     </div>
 

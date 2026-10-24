@@ -89,6 +89,39 @@ export interface AssistantStatusResponse {
   examples?: string[]
   healthy?: boolean
   mode?: string
+  memory?: AssistantMemoryInfo
+}
+
+// response.AssistantMemoryInfo — how much of the dialogue the assistant keeps in mind
+export interface AssistantMemoryInfo {
+  enabled?: boolean
+  // how many last turns go with the next question
+  context_turns?: number
+  ttl_seconds?: number
+}
+
+// response.AssistantHistoryItem — one question and its short answer
+export interface AssistantHistoryItem {
+  id?: string
+  question?: string
+  answer_text?: string
+  answer_id?: string
+  // ok | partial | error
+  status?: string
+  error_code?: string | null
+  mode?: string
+  // goes with the next question as context
+  in_context?: boolean
+  created_at?: string
+}
+
+// response.AssistantHistoryResponse — oldest first
+export interface AssistantHistoryResponse {
+  channel?: string
+  conversation?: string
+  items?: AssistantHistoryItem[]
+  memory?: AssistantMemoryInfo
+  total?: number
 }
 
 // response.TelegramLinkResponse
@@ -212,6 +245,70 @@ export interface PaymentOccurrence {
   updated_at?: string
 }
 
+// GET /payment-occurrences/search. amounts are in kopecks / cents and need exactly one currency
+export interface PaymentSearchParams {
+  q?: string
+  status?: string[]
+  currency?: string[]
+  assignee?: 'me'
+  assignee_id?: string[]
+  persona_id?: string[]
+  recurrent_payment_id?: string
+  due_from?: string
+  due_to?: string
+  paid_from?: string
+  paid_to?: string
+  amount_min?: number
+  amount_max?: number
+  sort?: 'due_date' | 'amount' | 'created_at' | 'description' | 'paid_date'
+  order?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
+}
+
+// response.PaymentSearchResponse — total counts everything that matched, not just this page
+export interface PaymentSearchResponse {
+  items?: PaymentOccurrence[]
+  limit?: number
+  offset?: number
+  total?: number
+}
+
+// GET /recurring-payments/search, the same rules for amounts
+export interface RecurringSearchParams {
+  q?: string
+  currency?: string[]
+  frequency?: string[]
+  assignee?: 'me'
+  assignee_id?: string[]
+  persona_id?: string[]
+  status?: ('active' | 'stopped')[]
+  include_stopped?: boolean
+  amount_min?: number
+  amount_max?: number
+  start_from?: string
+  start_to?: string
+  next_due_from?: string
+  next_due_to?: string
+  sort?: 'description' | 'amount' | 'created_at' | 'next_due' | 'start_date'
+  order?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
+}
+
+// response.RecurringPaymentItem — a template with its next unpaid due date
+export interface RecurringPaymentItem extends RecurrentPayment {
+  next_due_date?: string | null
+  status?: 'active' | 'stopped'
+}
+
+export interface RecurringPaymentSearchResponse {
+  items?: RecurringPaymentItem[]
+  limit?: number
+  offset?: number
+  total?: number
+}
+
 export interface PaymentListResponse {
   items?: PaymentOccurrence[]
   total?: number
@@ -261,3 +358,66 @@ export interface UpdateUserNotificationSettingsRequest {
 }
 
 export type PatchUserNotificationSettingsRequest = UpdateUserNotificationSettingsRequest
+
+// response.AuditActor — null when the action was done by the system
+export interface AuditActor {
+  id?: string
+  full_name?: string | null
+  role?: string | null
+}
+
+// response.AuditLogItem. changes: { field: { from, to } }, only what really changed
+export interface AuditLogItem {
+  id?: number
+  created_at?: string
+  actor?: AuditActor | null
+  action?: string
+  action_label?: string
+  // web | miniapp | bot | system
+  channel?: string
+  // success | failure
+  outcome?: string
+  entity_type?: string | null
+  entity_id?: string | null
+  changes?: Record<string, { from?: unknown, to?: unknown }> | null
+  payload?: Record<string, unknown> | null
+  ip?: string | null
+  user_agent?: string | null
+  request_id?: string | null
+}
+
+export interface AuditLogResponse {
+  items?: AuditLogItem[]
+  limit?: number
+  offset?: number
+  total?: number
+}
+
+// GET /audit-log (admin) and GET /me/activity (only your own, actor_id is ignored there).
+// action can be an exact code or a prefix like `recurring.*`
+export interface AuditLogParams {
+  actor_id?: string[]
+  action?: string[]
+  entity_type?: string[]
+  entity_id?: string
+  channel?: string[]
+  outcome?: 'success' | 'failure'
+  // YYYY-MM-DD or RFC3339
+  from?: string
+  to?: string
+  q?: string
+  order?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
+}
+
+// audit.ActionInfo — every action code with its russian label, for the filters
+export interface AuditActionInfo {
+  action?: string
+  label?: string
+  entity_type?: string
+}
+
+export interface AuditActionsResponse {
+  items?: AuditActionInfo[]
+}

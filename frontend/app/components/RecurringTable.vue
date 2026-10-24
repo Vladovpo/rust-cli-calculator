@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import type { Template } from '~/utils/periods'
+import type { Template, TemplateColumnFilters } from '~/utils/periods'
 
-const props = defineProps<{ templates: Template[], loading?: boolean }>()
+// unit: the sign of the one picked currency, '' when there are several (then amounts can't be filtered)
+const props = withDefaults(defineProps<{ templates: Template[], loading?: boolean, unit?: string }>(), { unit: '' })
 const emit = defineEmits<{ stop: [template: Template] }>()
 
-// a filter per column, '' = off. they will go to the server as query params,
-// it can't filter yet, so the column titles show «скоро» for now
-const filters = reactive({ title: '', amount: '', currency: '', frequency: '', who: '', nextDue: '' })
+// a filter per column, '' = off. the screen sends them to the server (GET /recurring-payments/search).
+// currency and who pays are filtered above the table
+const filters = defineModel<TemplateColumnFilters>('filters', { required: true })
+
+// the server knows two kinds: by weeks and by months (quarterly and yearly are «every 3 / 12 months»)
+const frequencyOptions = [
+  { value: 'weekly', label: 'Еженедельно' },
+  { value: 'monthly', label: 'Ежемесячно, ежеквартально, ежегодно' },
+]
 
 // stopping can't be undone, so the first click only asks
 const confirming = ref<string>()
@@ -31,12 +38,20 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
   <div class="table" :class="{ admin: isAdmin }">
     <div class="row head">
       <span class="mono muted">№</span>
-      <TableFilter v-model="filters.title" label="Название" soon />
-      <TableFilter v-model="filters.amount" label="Сумма" right soon />
-      <span class="currency"><TableFilter v-model="filters.currency" label="Валюта" soon /></span>
-      <TableFilter v-model="filters.frequency" label="Периодичность" soon />
-      <TableFilter v-model="filters.who" label="Ответственный" soon />
-      <TableFilter v-model="filters.nextDue" label="Следующий срок" soon />
+      <TableFilter v-model="filters.title" label="Название" />
+      <TableFilter
+        v-model:from="filters.amountFrom"
+        v-model:to="filters.amountTo"
+        label="Сумма"
+        range="amount"
+        :unit="unit"
+        :blocked="unit ? '' : 'Сумму можно искать в одной валюте: оставьте одну в фильтре сверху'"
+        right
+      />
+      <span class="currency">Валюта</span>
+      <TableFilter v-model="filters.frequency" label="Периодичность" :options="frequencyOptions" />
+      <span>Ответственный</span>
+      <TableFilter v-model:from="filters.nextFrom" v-model:to="filters.nextTo" label="Следующий срок" range="date" />
       <span>Статус</span>
       <span v-if="isAdmin" />
     </div>

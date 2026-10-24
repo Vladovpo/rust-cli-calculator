@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import type { PaymentSearchParams } from '~/types/api'
+import type { Period } from '~/utils/periods'
+import { noPeriodColumnFilters } from '~/utils/periods'
+
 const { isAdmin } = useRole()
 
 const status = ref('all')
@@ -23,8 +27,48 @@ const assignee = ref('')
 const assigneeOptions = computed(() => payments.assignees.value
   .map(({ person }) => ({ value: person.name, label: person.short, meta: person.persona })))
 
+// the filters in the column titles. with any of them set the server does the search,
+// sending the filters above along (month, currencies, who pays)
+const columns = ref(noPeriodColumnFilters())
+const columnsOn = computed(() => Object.values(columns.value).some(value => value.trim()))
+const symbols: Record<string, string> = { RUB: '₽', USD: '$', EUR: '€' }
+// the server compares amounts only within one currency
+const oneCurrency = computed(() => (currencies.value.length === 1 ? currencies.value[0]! : ''))
+
+const later = (a: string, b: string) => (a > b ? a : b)
+const earlier = (a: string, b: string) => (!b || a < b ? a : b)
+const minor = (text: string) => (text ? Math.round(parseMoney(text) * 100) : undefined)
+
+const search = useServerSearch(() => {
+  if (!columnsOn.value) return null
+  const c = columns.value
+  const monthStart = `${month.value}-01`
+  const id = payments.assignees.value.find(item => item.person.name === assignee.value)?.id
+  const params: PaymentSearchParams = {
+    q: c.title.trim() || undefined,
+    // the month above and the «Срок» range, both at once
+    due_from: later(monthStart, c.dueFrom),
+    due_to: earlier(lastDayOf(month.value), c.dueTo),
+    paid_from: c.paidFrom || undefined,
+    paid_to: c.paidTo || undefined,
+    currency: currencies.value,
+    assignee_id: id ? [id] : undefined,
+    amount_min: oneCurrency.value ? minor(c.amountFrom) : undefined,
+    amount_max: oneCurrency.value ? minor(c.amountTo) : undefined,
+    sort: 'due_date',
+    order: 'asc',
+    limit: 200,
+  }
+  return params
+}, payments.searchPeriods)
+
+// the rows before the status filter: the server's answer, or the loaded month with the filters above
+const base = computed<Period[]>(() => (columnsOn.value
+  ? search.result.value?.periods ?? []
+  : payments.periods.value))
+
 // currency and assignee filters first, the status filter goes on top of that
-const filtered = computed(() => payments.periods.value.filter(period => fromRu(period.due).startsWith(month.value)
+const filtered = computed(() => base.value.filter(period => fromRu(period.due).startsWith(month.value)
   && currencies.value.includes(period.currency)
   && (!assignee.value || period.who.name === assignee.value)))
 
@@ -57,7 +101,7 @@ const currenciesModel = transitioned(currencies)
 const assigneeModel = transitioned(assignee)
 
 // any filter narrower than "everything"
-const isFiltered = computed(() => month.value !== thisMonth.value || status.value !== 'all' || currencies.value.length < 3 || !!assignee.value)
+const isFiltered = computed(() => month.value !== thisMonth.value || status.value !== 'all' || currencies.value.length < 3 || !!assignee.value || columnsOn.value)
 
 function resetFilters() {
   withTransition(() => {
@@ -65,8 +109,14 @@ function resetFilters() {
     status.value = 'all'
     currencies.value = ['RUB', 'USD', 'EUR']
     assignee.value = ''
+    columns.value = noPeriodColumnFilters()
   })
 }
+
+// the server found more than one page: say so instead of quietly showing part of it
+const more = computed(() => (columnsOn.value && search.result.value && search.result.value.total > search.result.value.periods.length
+  ? search.result.value.total - search.result.value.periods.length
+  : 0))
 
 // footer totals for the whole month, counted from the filtered rows
 const monthName = computed(() => monthNames[parseMonthKey(month.value).month]!.toLowerCase())
@@ -92,16 +142,22 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
     <UiState v-if="payments.loadError.value" kind="error" class="load-error" @retry="payments.load">
       Не удалось загрузить платежи: {{ payments.loadError.value }}
     </UiState>
+    <UiState v-else-if="columnsOn && search.error.value" kind="error" class="load-error" @retry="search.retry">
+      Не удалось найти платежи: {{ search.error.value }}
+    </UiState>
     <!-- after a failed load the table would say «no payments», which isn't true -->
     <PaymentsTable
       v-if="!payments.loadError.value"
+      v-model:filters="columns"
       :periods="shown"
       :totals="shownTotals"
       :filtered="isFiltered"
       :month="monthName"
-      :loading="payments.pending.value"
+      :unit="oneCurrency ? symbols[oneCurrency] : ''"
+      :loading="payments.pending.value || (columnsOn && search.searching.value && !search.result.value)"
       @reset="resetFilters"
     />
+    <p v-if="more" class="more">Ещё {{ more }} не показаны: уточните фильтры</p>
 
     <Transition name="modal">
       <NewPaymentModal v-if="showNewPayment" @close="showNewPayment = false" />
@@ -127,6 +183,13 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
 
 .new {
   width: 160px;
+}
+
+.more {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
 }
 
 .load-error {

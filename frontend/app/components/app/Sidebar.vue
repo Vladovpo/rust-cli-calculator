@@ -10,6 +10,8 @@ const mainNav = computed<NavItem[]>(() => [
   { label: 'Календарь', to: `/${role.value}/calendar`, icon: 'calendar' },
   { label: 'Периоды', to: `/${role.value}/payments`, icon: 'payments' },
   { label: 'Регулярные', to: `/${role.value}/recurring`, icon: 'recurring' },
+  // admins have it in their own section below, with everybody's actions
+  ...(isAdmin.value ? [] : [{ label: 'Журнал', to: '/user/log', icon: 'log' } as NavItem]),
 ])
 
 const adminNav: NavItem[] = [

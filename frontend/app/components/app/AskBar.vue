@@ -18,6 +18,11 @@ let lastTop = 0
 
 useClickOutside(root, () => (open.value = false), open)
 
+// the earlier dialogue comes back from the server the first time the chat opens
+watch(open, (value) => {
+  if (value) chat.loadHistory()
+})
+
 function send() {
   if (chat.busy.value) return
   stick = true
@@ -154,7 +159,7 @@ onBeforeUnmount(() => {
         aria-live="polite"
       >
         <div class="head">
-          <span class="kicker">Ассистент</span>
+          <span class="kicker">Ассистент<template v-if="chat.memory.value"> · {{ chat.memory.value }}</template></span>
           <button type="button" class="new" @click="newChat">Новый чат</button>
         </div>
 
@@ -162,10 +167,10 @@ onBeforeUnmount(() => {
           <div ref="scroller" class="messages" tabindex="0" @scroll="onScroll">
             <div ref="sizer" class="sizer" :style="{ maxWidth: `${maxWidth - 34}px` }">
               <template v-for="message in messages" :key="message.id">
-                <p v-if="message.from === 'me'" class="mine">{{ message.text }}</p>
+                <p v-if="message.from === 'me'" class="mine" :class="{ forgotten: message.forgotten }">{{ message.text }}</p>
                 <p v-else-if="message.pending" class="pending"><span class="pulse" />{{ message.step }}…</p>
                 <template v-else>
-                  <p class="answer" :class="{ error: message.error, typing: message.typing }">{{ message.text }}</p>
+                  <p class="answer" :class="{ error: message.error, typing: message.typing, forgotten: message.forgotten }">{{ message.text }}</p>
                   <div v-if="message.followups?.length && !message.typing" class="followups">
                     <button
                       v-for="followup in message.followups"
@@ -347,6 +352,11 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 10px;
   width: max-content;
+}
+
+/* earlier turns the assistant no longer keeps in mind: still readable, just quieter */
+.forgotten {
+  opacity: 0.55;
 }
 
 .mine {

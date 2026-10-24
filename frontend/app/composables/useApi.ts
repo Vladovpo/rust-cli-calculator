@@ -1,5 +1,13 @@
 import type {
   AssistantAnswerResponse,
+  AssistantHistoryResponse,
+  AuditActionsResponse,
+  AuditLogParams,
+  AuditLogResponse,
+  PaymentSearchParams,
+  PaymentSearchResponse,
+  RecurringSearchParams,
+  RecurringPaymentSearchResponse,
   AssistantAskRequest,
   AssistantStatusResponse,
   MiniAppAuthRequest,
@@ -61,6 +69,8 @@ export function useApi() {
     // templates: everyone reads, only the admin creates, edits and stops
     recurring: {
       list: () => api<RecurrentPayment[]>('/recurring-payments'),
+      // filtered, sorted and paged by the server
+      search: (query: RecurringSearchParams) => api<RecurringPaymentSearchResponse>('/recurring-payments/search', { query }),
       create: (body: CreateRecurrentPaymentRequest) =>
         api<{ id?: string }>('/recurring-payments', { method: 'POST', body }),
       update: (id: string, body: UpdateRecurrentPaymentRequest) =>
@@ -72,6 +82,8 @@ export function useApi() {
     // periods of the recurring payments. the assignee or the admin marks them paid
     occurrences: {
       list: (mine = false) => api<PaymentListResponse>('/payment-occurrences', { query: mine ? { assignee: 'me' } : undefined }),
+      // filtered, sorted and paged by the server
+      search: (query: PaymentSearchParams) => api<PaymentSearchResponse>('/payment-occurrences/search', { query }),
       get: (id: string) => api<PaymentOccurrence>(`/payment-occurrences/${encodeURIComponent(id)}`),
       patch: (id: string, body: PatchPaymentOccurrenceRequest) =>
         api(`/payment-occurrences/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
@@ -89,8 +101,18 @@ export function useApi() {
       remove: () => api('/notifications/settings', { method: 'DELETE' }),
     },
 
+    // who did what: the whole log for the admin, your own actions for everyone
+    audit: {
+      list: (query: AuditLogParams) => api<AuditLogResponse>('/audit-log', { query }),
+      mine: (query: AuditLogParams) => api<AuditLogResponse>('/me/activity', { query }),
+      actions: () => api<AuditActionsResponse>('/audit-log/actions'),
+    },
+
     assistant: {
       status: () => api<AssistantStatusResponse>('/assistant/status'),
+      // your earlier questions and answers, kept on the server
+      history: (channel = 'web', limit = 20) => api<AssistantHistoryResponse>('/assistant/history', { query: { channel, limit } }),
+      clearHistory: (channel = 'web') => api('/assistant/history', { method: 'DELETE', query: { channel } }),
       ask: (body: AssistantAskRequest) => api<AssistantAnswerResponse>('/assistant/ask', { method: 'POST', body }),
       // server-sent events (step, block, text, done) — read with useAssistant
       askStream: (body: AssistantAskRequest, signal?: AbortSignal) =>

@@ -1,4 +1,4 @@
-import type { RecurrentPayment, User } from '~/types/api'
+import type { PaymentSearchParams, RecurrentPayment, RecurringSearchParams, User } from '~/types/api'
 import type { Currency, Period, Person, Template } from '~/utils/periods'
 
 export interface NewPayment {
@@ -23,7 +23,8 @@ export function usePayments() {
   const { user } = useAuth()
   const { isAdmin } = useRole()
 
-  const live = useState('payments-live', () => ({ periods: [] as Period[], templates: [] as Template[], users: [] as User[] }))
+  // recurring: the server's templates as they came, search results need them for the periods' frequency
+  const live = useState('payments-live', () => ({ periods: [] as Period[], templates: [] as Template[], users: [] as User[], recurring: [] as RecurrentPayment[] }))
   // false until the first answer, the screens show "loading" meanwhile
   const loaded = useState('payments-loaded', () => false)
   // when the list last came from the server, for the footer
@@ -52,7 +53,10 @@ export function usePayments() {
         .map(item => ({ id: item.id, person: personOf(item.full_name, item.persona?.name) }))
     }
     const names = [...new Set(live.value.periods.map(period => period.who.name))].filter(Boolean)
-    return names.map(name => ({ person: live.value.periods.find(period => period.who.name === name)!.who }))
+    return names.map((name) => {
+      const period = live.value.periods.find(item => item.who.name === name)!
+      return { id: period.userId, person: period.who }
+    })
   })
 
   // the assignee or the admin can mark a payment
@@ -75,10 +79,7 @@ export function usePayments() {
       // logged out while this was on its way: it's the previous person's data, drop it
       if (session !== sessionGeneration()) return
       const userList = users.items ?? []
-      const personaOf = (id?: string) => {
-        if (id && id === user.value?.id) return user.value?.persona?.name ?? ''
-        return userList.find(item => item.id === id)?.persona?.name ?? ''
-      }
+      const personaOf = (id?: string) => personaFrom(userList, id)
       const byId = new Map<string, RecurrentPayment>((recurring ?? []).map(item => [item.id ?? '', item]))
 
       live.value = {
@@ -87,6 +88,7 @@ export function usePayments() {
           .sort((a, b) => fromRu(a.due).localeCompare(fromRu(b.due))),
         templates: (recurring ?? []).map(item => toTemplate(item, personaOf(item.assignee_id ?? undefined), today.value)),
         users: userList,
+        recurring: recurring ?? [],
       }
       loadError.value = ''
       loaded.value = true
@@ -97,6 +99,36 @@ export function usePayments() {
     }
     finally {
       loading.value = false
+    }
+  }
+
+  // the persona (job title) of a user: yours from your profile, others' from the users list (admin only)
+  function personaFrom(userList: User[], id?: string) {
+    if (id && id === user.value?.id) return user.value?.persona?.name ?? ''
+    return userList.find(item => item.id === id)?.persona?.name ?? ''
+  }
+
+  // the server filters, sorts and pages (GET /payment-occurrences/search). the rows come out
+  // the same as in the full list, so the tables don't care where they came from
+  async function searchPeriods(params: PaymentSearchParams) {
+    const res = await api.occurrences.search(params)
+    const byId = new Map<string, RecurrentPayment>(live.value.recurring.map(item => [item.id ?? '', item]))
+    return {
+      periods: (res.items ?? []).map(item => toPeriod(item, byId.get(item.recurrent_payment_id ?? ''), personaFrom(live.value.users, item.user_id), today.value)),
+      total: res.total ?? 0,
+    }
+  }
+
+  // the same for recurring payments (GET /recurring-payments/search). the server knows the next unpaid date
+  async function searchTemplates(params: RecurringSearchParams) {
+    const res = await api.recurring.search(params)
+    return {
+      templates: (res.items ?? []).map((item) => {
+        const template = toTemplate(item, personaFrom(live.value.users, item.assignee_id ?? undefined), today.value)
+        if (item.next_due_date !== undefined) template.nextDue = item.next_due_date ? toRu(item.next_due_date) : undefined
+        return template
+      }),
+      total: res.total ?? 0,
     }
   }
 
@@ -145,6 +177,6 @@ export function usePayments() {
 
   return {
     today, periods, templates, assignees, meName, pending, ready, loading, loadError, actionError, loadedAt,
-    canMark, load, markPaid, unmark, stop, add,
+    canMark, load, searchPeriods, searchTemplates, markPaid, unmark, stop, add,
   }
 }
