@@ -4,6 +4,10 @@ import type { Template } from '~/utils/demo'
 const props = defineProps<{ templates: Template[] }>()
 const emit = defineEmits<{ stop: [template: Template] }>()
 
+// a filter per column, '' = off. they will go to the server as query params,
+// it can't filter yet, so the column titles show «скоро» for now
+const filters = reactive({ title: '', amount: '', currency: '', frequency: '', who: '', nextDue: '' })
+
 // stopping can't be undone, so the first click only asks
 const confirming = ref<string>()
 function stop(item: Template) {
@@ -27,12 +31,12 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
   <div class="table" :class="{ admin: isAdmin }">
     <div class="row head">
       <span class="mono muted">№</span>
-      <span>Название</span>
-      <span class="right">Сумма</span>
-      <span class="currency">Валюта</span>
-      <span>Периодичность</span>
-      <span>Ответственный</span>
-      <span>Следующий срок</span>
+      <TableFilter v-model="filters.title" label="Название" soon />
+      <TableFilter v-model="filters.amount" label="Сумма" right soon />
+      <span class="currency"><TableFilter v-model="filters.currency" label="Валюта" soon /></span>
+      <TableFilter v-model="filters.frequency" label="Периодичность" soon />
+      <TableFilter v-model="filters.who" label="Ответственный" soon />
+      <TableFilter v-model="filters.nextDue" label="Следующий срок" soon />
       <span>Статус</span>
       <span v-if="isAdmin" />
     </div>
@@ -101,8 +105,11 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
   grid-template-columns: 36px minmax(190px, 2.2fr) minmax(100px, 1fr) 80px minmax(140px, 1.4fr) minmax(140px, 1.4fr) minmax(100px, 1fr) minmax(100px, 1fr) 130px;
 }
 
-/* header: plain small text, the hairline under it does the separating */
+/* header: plain small text, the hairline under it does the separating.
+   above the rows, so a filter menu isn't hidden under them */
 .row.head {
+  position: relative;
+  z-index: 4;
   height: 40px;
   border-top: 0;
   font-size: 12px;

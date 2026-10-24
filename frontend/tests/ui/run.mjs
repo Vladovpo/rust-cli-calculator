@@ -472,11 +472,11 @@ try {
   })
 
   await check('T11', async () => {
-    await page.getByRole('button', { name: /Добавить персону/ }).click()
-    const modal = modalTitled(page, 'Новая персона')
+    await page.getByRole('button', { name: /Добавить должность/ }).click()
+    const modal = modalTitled(page, 'Новая должность')
     await modal.getByLabel('Название').fill(P1)
     await modal.getByLabel('Описание').fill('created by ui test')
-    await modal.getByRole('button', { name: 'Создать персону' }).click()
+    await modal.getByRole('button', { name: 'Создать должность' }).click()
     await modal.waitFor({ state: 'detached', timeout: 10000 })
     await page.locator('aside.panel .item', { hasText: P1 }).waitFor({ timeout: 10000 })
   })
@@ -506,13 +506,13 @@ try {
     await userModal.getByLabel('ФИО').fill('Юай Тестов')
     await userModal.getByLabel('Логин').fill(LOGIN)
     await userModal.locator('.control').click()
-    await userModal.getByRole('button', { name: /Новая персона/ }).click()
-    const personaModal = modalTitled(page, 'Новая персона')
+    await userModal.getByRole('button', { name: /Новая должность/ }).click()
+    const personaModal = modalTitled(page, 'Новая должность')
     await personaModal.waitFor()
     assert(await page.locator('.modal').count() === 2, 'persona modal is not on top of the user form')
     await shot('A4-stacked-modals')
     await personaModal.getByLabel('Название').fill(P2)
-    await personaModal.getByRole('button', { name: 'Создать персону' }).click()
+    await personaModal.getByRole('button', { name: 'Создать должность' }).click()
     await personaModal.waitFor({ state: 'detached', timeout: 10000 })
     assert(await userModal.getByLabel('ФИО').inputValue() === 'Юай Тестов', 'ФИО lost')
     assert(await userModal.getByLabel('Логин').inputValue() === LOGIN, 'Логин lost')
@@ -607,7 +607,7 @@ try {
       assert(await page.locator('aside.sidebar .item.active').innerText() === label, `${path}: nav item not active`)
     }
     // personas live in the panel on the users page now, the page and its nav item are gone
-    assert(await page.locator('aside.sidebar').getByRole('link', { name: 'Персоны' }).count() === 0, 'Персоны still in the nav')
+    assert(await page.locator('aside.sidebar').getByRole('link', { name: 'Должности' }).count() === 0, 'Должности still in the nav')
   })
 
   await check('T29', async () => {
@@ -616,17 +616,17 @@ try {
     await page.goto(`${BASE}/admin/users`)
     await hydrated(page)
     const items = () => page.locator('.panel .item')
-    await page.getByRole('button', { name: /Добавить персону/ }).click()
-    let modal = modalTitled(page, 'Новая персона')
+    await page.getByRole('button', { name: /Добавить должность/ }).click()
+    let modal = modalTitled(page, 'Новая должность')
     await modal.getByLabel('Название').fill(P3)
     await modal.getByLabel('Описание').fill('first')
-    await modal.getByRole('button', { name: 'Создать персону' }).click()
+    await modal.getByRole('button', { name: 'Создать должность' }).click()
     await modal.waitFor({ state: 'detached', timeout: 10000 })
     await items().filter({ hasText: P3 }).waitFor({ timeout: 10000 })
 
     // edit: rename and clear the description
     await items().filter({ hasText: P3 }).getByRole('button', { name: 'Изменить' }).click()
-    modal = modalTitled(page, 'Изменить персону')
+    modal = modalTitled(page, 'Изменить должность')
     await modal.getByLabel('Название').fill(`${P3}_v2`)
     await modal.getByLabel('Описание').fill('')
     await modal.getByRole('button', { name: 'Сохранить' }).click()

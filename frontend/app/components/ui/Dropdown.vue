@@ -8,7 +8,7 @@ export interface DropdownOption {
 const props = withDefaults(defineProps<{
   options: DropdownOption[]
   placeholder: string
-  // offer the placeholder as an option to pick "nothing" (e.g. «Без персоны»)
+  // offer the placeholder as an option to pick "nothing" (e.g. «Без должности»)
   clearable?: boolean
   // muted text before the value, e.g. «Ответственный:»
   prefix?: string

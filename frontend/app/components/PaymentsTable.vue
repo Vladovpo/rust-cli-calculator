@@ -10,6 +10,10 @@ const props = withDefaults(defineProps<{
 }>(), { month: 'октябрь' })
 defineEmits<{ reset: [] }>()
 
+// a filter per column, '' = off. they will go to the server as query params,
+// it can't filter yet, so the column titles show «скоро» for now
+const filters = reactive({ title: '', due: '', amount: '', paidAt: '' })
+
 const payments = usePayments()
 const { visible, hasMore, sentinel } = useLazyList(() => props.periods)
 
@@ -29,13 +33,13 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
   <div class="table">
     <div class="row head">
       <span class="mono muted">№</span>
-      <span>Название</span>
+      <TableFilter v-model="filters.title" label="Название" soon />
       <span>Ответственный</span>
-      <span>Срок</span>
-      <span class="right">Сумма</span>
+      <TableFilter v-model="filters.due" label="Срок" soon />
+      <TableFilter v-model="filters.amount" label="Сумма" right soon />
       <span class="currency">Валюта</span>
       <span>Статус</span>
-      <span>Дата оплаты</span>
+      <TableFilter v-model="filters.paidAt" label="Дата оплаты" soon />
       <span class="right">Просрочка</span>
     </div>
 
@@ -128,8 +132,10 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
   border-top: 1px solid var(--line);
 }
 
-/* header: plain small text, the hairline under it does the separating */
+/* header: plain small text, the hairline under it does the separating.
+   above the rows, so a filter menu isn't hidden under them */
 .row.head {
+  z-index: 4;
   height: 40px;
   border-top: 0;
   font-size: 12px;

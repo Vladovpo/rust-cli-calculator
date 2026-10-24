@@ -12,7 +12,7 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
     <div class="row head">
       <span>Пользователь</span>
       <span>Роль</span>
-      <span>Персона</span>
+      <span>Должность</span>
       <span>Отвечает за</span>
       <span>Telegram</span>
       <span>Создан</span>

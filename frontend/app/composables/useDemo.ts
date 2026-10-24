@@ -4,7 +4,8 @@ import type { Currency, Period, Person, Template } from '~/utils/demo'
 // the actions below change them in this browser only, until reload
 export function useDemo() {
   const { prefs } = usePrefs()
-  const enabled = computed(() => prefs.value.demoMode)
+  // only in npm run dev: in prod the panel always shows real data, even if the switch was left on
+  const enabled = computed(() => import.meta.dev && prefs.value.demoMode)
 
   // copies, so the seeds stay untouched for reset. `who` keeps pointing at the same person
   const fresh = () => ({

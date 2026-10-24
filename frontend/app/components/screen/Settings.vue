@@ -5,6 +5,8 @@ const { prefs } = usePrefs()
 const demo = useDemo()
 const api = useApi()
 const route = useRoute()
+// demo mode is only offered in npm run dev
+const isDev = import.meta.dev
 
 // like settings on a phone: a list of sections, a click opens one, «Настройки» goes back.
 // the open section lives in the url (?section=), so the browser back button works too
@@ -14,7 +16,7 @@ const sections: { id: Section, title: string, icon: IconName }[] = [
   { id: 'mail', title: 'Напоминания на почту', icon: 'mail' },
   { id: 'demo', title: 'Демо-режим', icon: 'demo' },
   { id: 'about', title: 'О системе', icon: 'info' },
-]
+].filter(item => item.id !== 'demo' || isDev) as { id: Section, title: string, icon: IconName }[]
 const open = computed(() => sections.find(item => item.id === route.query.section))
 
 function show(id?: Section) {
@@ -59,7 +61,7 @@ const assistantText = { checking: 'проверяем…', ok: 'онлайн', d
 
 <template>
   <div>
-    <AppPageHeader title="Настройки" subtitle="Доступность и демо-режим хранятся в этом браузере, напоминания — на сервере" />
+    <AppPageHeader title="Настройки" :subtitle="isDev ? 'Доступность и демо-режим хранятся в этом браузере, напоминания на сервере' : 'Доступность хранится в этом браузере, напоминания на сервере'" />
 
     <div class="settings">
       <Transition name="drill" mode="out-in">

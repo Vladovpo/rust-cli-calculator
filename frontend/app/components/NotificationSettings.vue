@@ -38,6 +38,9 @@ async function load() {
 
 onMounted(load)
 
+// what sits on the right of each row: a switch, the wide email field, two short fields
+const skeletonControls = ['switch', 'wide', 'short-1', 'short-2']
+
 const busy = ref(false)
 const error = ref('')
 const done = ref(false)
@@ -72,7 +75,19 @@ async function save() {
 <template>
   <div class="notify">
     <UiState v-if="loadError" kind="error" @retry="load">Не удалось загрузить: {{ loadError }}</UiState>
-    <p v-else-if="saved === undefined" class="row hint">Загружаем…</p>
+
+    <!-- grey rows of the same size until the settings arrive, so nothing jumps -->
+    <template v-else-if="saved === undefined">
+      <div v-for="control in skeletonControls" :key="control" class="row">
+        <span class="stack"><UiSkeleton width="170px" height="14px" /><UiSkeleton width="230px" height="10px" /></span>
+        <UiSkeleton v-if="control === 'switch'" width="28px" height="16px" />
+        <span v-else class="field" :class="{ wide: control === 'wide' }"><UiSkeleton height="40px" /></span>
+      </div>
+      <div class="row">
+        <span />
+        <UiSkeleton width="170px" height="36px" />
+      </div>
+    </template>
 
     <!-- one setting per row, like the other sections: what it is on the left, the field on the right -->
     <template v-else>
@@ -149,6 +164,12 @@ async function save() {
 
 .field.wide {
   width: 320px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .hint {
