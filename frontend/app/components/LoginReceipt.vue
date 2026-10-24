@@ -35,10 +35,7 @@ const lines = [
       </div>
     </div>
 
-    <p class="caption italic">
-      <span class="dot" />
-      Telegram напомнит за три дня до срока —<br>аренда, серверы и подписки не потеряются.
-    </p>
+    <p class="caption italic">Телеграм уведомления за три дня до срока</p>
   </div>
 </template>
 
@@ -150,20 +147,9 @@ const lines = [
 }
 
 .caption {
-  display: flex;
-  gap: 9px;
   margin-top: 26px;
   font-size: 15px;
   line-height: 21px;
   color: var(--ink-2);
-}
-
-.dot {
-  flex-shrink: 0;
-  width: 7px;
-  height: 7px;
-  margin-top: 12px;
-  border-radius: 50%;
-  background: var(--accent);
 }
 </style>
