@@ -8,7 +8,7 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
 </script>
 
 <template>
-  <div class="table">
+  <div class="card table">
     <div class="row head">
       <span>Пользователь</span>
       <span>Роль</span>
@@ -59,11 +59,11 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
   height: 1px;
 }
 
-/* no box around it: rows run the full width, separated by hairlines */
+/* a rounded card like the job titles next to it, rows separated by hairlines inside.
+   overflow keeps the hover fill inside the round corners */
 .table {
   flex: 1;
-  margin: 0 -12px;
-  border-bottom: 1px solid var(--line);
+  overflow: hidden;
   font-size: 13px;
 }
 
@@ -76,7 +76,7 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
   grid-template-columns: 210px 80px 140px 102px 72px 74px 1fr;
   align-items: center;
   height: 60px;
-  padding: 0 12px;
+  padding: 0 16px;
   border-top: 1px solid var(--line);
   white-space: nowrap;
 }
