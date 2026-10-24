@@ -232,7 +232,8 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
   overflow: hidden;
   line-height: 16px;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--lines, 1);
 }
