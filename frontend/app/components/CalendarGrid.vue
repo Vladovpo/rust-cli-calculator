@@ -42,8 +42,8 @@ onMounted(() => {
 })
 onBeforeUnmount(() => observer?.disconnect())
 
-// a line is 22px at least. with free room in the cell it grows (up to 54px) and the name wraps
-// to a few lines instead of ending with …
+// a payment is one 22px line. a long name may wrap to more lines if the cell has room for it,
+// this is the most height one payment can take (up to 54px, three lines)
 const lineHeight = 22
 const maxHeight = 54
 
@@ -60,7 +60,6 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
   const height = chipHeight(Math.min(fit, onDay.length), onDay.length > fit ? 1 : 0)
   return {
     ...cell,
-    height,
     lines: Math.max(1, Math.floor((height - 6) / 16)),
     key: cell.iso,
     day: String(cell.day).padStart(2, '0'),
@@ -83,7 +82,7 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
       :key="cell.key"
       class="cell"
       :class="{ weekend: cell.weekend }"
-      :style="{ '--chip-h': `${cell.height}px`, '--lines': cell.lines }"
+      :style="{ '--lines': cell.lines }"
     >
       <span v-if="cell.today" class="today"><span class="circle">{{ cell.day }}</span>сегодня</span>
       <span v-else class="day mono" :class="{ other: !cell.inMonth }">{{ cell.day }}</span>
@@ -217,10 +216,13 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
   filter: brightness(1.08);
 }
 
-/* the height comes from the cell (--chip-h), the corners stay round but not a full stadium on tall ones */
+/* as tall as its text: one line is the usual pill, a wrapped name gets a bit taller */
 .payment {
-  height: var(--chip-h, 22px);
-  border-radius: min(calc(var(--chip-h, 22px) / 2), 14px);
+  height: auto;
+  min-height: 22px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  border-radius: 11px;
 }
 
 /* the name wraps to as many lines as fit, the last one ends with … */
