@@ -1,0 +1,30 @@
+# Binaries
+*.exe
+*.test
+*.out
+coverage.*
+/backend/apiserver
+
+# Go workspace
+go.work
+go.work.sum
+
+# env: секреты не в репозиторий, пример остаётся
+.env
+.env.*
+!.env.example
+!nlq/.env.nlq.example
+
+# Editor/IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Материалы кейса
+case-*.pdf
+
+# TLS: сертификаты и состояние certbot (scripts/cert.sh)
+/certs/
+/letsencrypt/
+/certbot-www/
+/docs

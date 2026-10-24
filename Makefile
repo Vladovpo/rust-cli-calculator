@@ -1,0 +1,59 @@
+-include .env
+export
+
+COMPOSE_LOCAL := docker compose -f docker-compose.local.yaml
+MIGRATION_DSN := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable
+
+.PHONY: run build up down logs ps migrate-create migrate-up migrate-down migrate-version test vet swagger
+
+run:
+	@cd backend && go run ./cmd/apiserver
+
+build:
+	@cd backend && go build ./cmd/apiserver
+
+up:
+	@$(COMPOSE_LOCAL) up -d --build
+
+down:
+	@$(COMPOSE_LOCAL) down
+
+logs:
+	@$(COMPOSE_LOCAL) logs -f backend
+
+ps:
+	@$(COMPOSE_LOCAL) ps
+
+migrate-create:
+	@if [ -z "$(seq)" ]; then \
+		echo "Отсутствует необходимый параметр seq. Пример: make migrate-create seq=init"; \
+		exit 1; \
+	fi
+	@$(COMPOSE_LOCAL) run --rm migrate create -ext sql -dir /migrations -seq "$(seq)"
+
+migrate-up:
+	@$(COMPOSE_LOCAL) run --rm migrate -path /migrations -database "$(MIGRATION_DSN)" up
+
+migrate-down:
+	@$(COMPOSE_LOCAL) run --rm migrate -path /migrations -database "$(MIGRATION_DSN)" down $(steps)
+
+migrate-version:
+	@$(COMPOSE_LOCAL) run --rm migrate -path /migrations -database "$(MIGRATION_DSN)" version
+
+test:
+	@cd backend && go test ./...
+
+# Интеграционные тесты пакетов postgres и apiserver делят одну TEST_DATABASE_URL
+# и одни и те же UUID фикстур, поэтому гоняем строго последовательно (-p 1),
+# иначе параллельные пакеты наступают друг на друга (duplicate key / гонки сида).
+test-integration:
+	@cd backend && go test -tags integration -p 1 -count=1 ./...
+
+vet:
+	@cd backend && go vet ./...
+
+# Перегенерация backend/docs (swagger.yaml/json) из аннотаций хендлеров.
+swagger:
+	@cd backend && go run github.com/swaggo/swag/cmd/swag@v1.16.4 init -g cmd/apiserver/main.go -o docs
+
+.DEFAULT_GOAL := run

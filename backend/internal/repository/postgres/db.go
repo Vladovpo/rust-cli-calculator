@@ -1,0 +1,66 @@
+package postgres
+
+import (
+	"database/sql"
+	"time"
+
+	_ "github.com/lib/pq"
+)
+
+type DB struct {
+	databaseURL string
+	db          *sql.DB
+}
+
+func New(databaseURL string) *DB {
+	return &DB{
+		databaseURL: databaseURL,
+	}
+}
+
+// NewFromDB оборачивает уже открытый *sql.DB. Используется в интеграционных
+// тестах, которые сами открывают соединение к TEST_DATABASE_URL.
+func NewFromDB(db *sql.DB) *DB {
+	return &DB{db: db}
+}
+
+func (d *DB) Open() error {
+	db, err := sql.Open("postgres", d.databaseURL)
+	if err != nil {
+		return err
+	}
+	if err := db.Ping(); err != nil {
+		return err
+	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
+	d.db = db
+	return nil
+}
+
+func (d *DB) Close() {
+	d.db.Close()
+}
+
+func (d *DB) User() *UserRepository {
+	return &UserRepository{database: d}
+}
+
+func (d *DB) Persona() *PersonaRepository {
+	return &PersonaRepository{database: d}
+}
+
+func (d *DB) Payment() *PaymentRepository {
+	return &PaymentRepository{database: d}
+}
+
+func (d *DB) RecurrentPayment() *RecurrentPaymentRepository {
+	return &RecurrentPaymentRepository{database: d}
+}
+
+func (d *DB) Notifications() *NotificationsRepository {
+	return &NotificationsRepository{database: d}
+}

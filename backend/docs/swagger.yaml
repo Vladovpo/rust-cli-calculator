@@ -1,0 +1,2113 @@
+basePath: /api/v1
+definitions:
+  handler.PatchPaymentOccurrenceRequest:
+    properties:
+      action:
+        type: string
+      amount:
+        type: integer
+      currency:
+        type: string
+      description:
+        type: string
+      due_date:
+        type: string
+      paid_date:
+        type: string
+    type: object
+  handler.PaymentCurrencySummary:
+    properties:
+      currency:
+        type: string
+      outstanding_total:
+        type: integer
+      overdue_total:
+        type: integer
+      paid_total:
+        type: integer
+    type: object
+  handler.PaymentSummaryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/handler.PaymentCurrencySummary'
+        type: array
+    type: object
+  model.Persona:
+    properties:
+      created_at:
+        description: Когда создана.
+        example: "2026-10-23T20:05:31Z"
+        type: string
+      description:
+        description: Описание, до 255 символов; `null`, если не задано.
+        example: Оплачивает аренду и подписки
+        type: string
+        x-nullable: true
+      id:
+        description: Идентификатор персоны.
+        example: 223f4e8e-98ea-4e50-9fb7-a9ea8984b2f1
+        format: uuid
+        type: string
+      name:
+        description: Название, 1–64 символа, уникально без учёта регистра.
+        example: Бухгалтер
+        type: string
+      users_count:
+        description: Сколько пользователей с этой персоной.
+        example: 1
+        type: integer
+    type: object
+  model.PersonaRef:
+    properties:
+      id:
+        description: Идентификатор персоны.
+        example: 223f4e8e-98ea-4e50-9fb7-a9ea8984b2f1
+        format: uuid
+        type: string
+      name:
+        description: Название персоны.
+        example: Бухгалтер
+        type: string
+    type: object
+  model.RecurrentPayment:
+    properties:
+      amount:
+        description: Сумма в минимальных денежных единицах
+        type: integer
+      assignee_id:
+        description: AssigneeID — ответственный (user_recurrent_payments, ровно один);
+          nil, если не назначен.
+        type: string
+      assignee_name:
+        description: AssigneeName — полное имя ответственного (для списков и бота).
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      day_offset:
+        description: |-
+          Для monthly: день месяца (1–31)
+          Для weekly: день недели (0–6)
+        type: integer
+      description:
+        type: string
+      frequency:
+        description: weekly, monthly
+        type: string
+      id:
+        format: uuid
+        type: string
+      interval:
+        description: Каждые N недель или месяцев
+        type: integer
+      start_date:
+        description: StartDate — ближайшая дата оплаты (якорь графика), "YYYY-MM-DD".
+        type: string
+      stopped_at:
+        description: StoppedAt — момент мягкой остановки; nil у активного шаблона.
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.User:
+    properties:
+      created_at:
+        description: Когда создан.
+        example: "2026-10-23T20:05:31Z"
+        type: string
+      full_name:
+        description: Полное имя.
+        example: Ольга Иванова
+        type: string
+      id:
+        description: Идентификатор пользователя.
+        example: 9a191dfa-5e71-47aa-bcb2-ed5e9c071830
+        format: uuid
+        type: string
+      login:
+        description: Логин для входа.
+        example: olga
+        type: string
+      persona:
+        allOf:
+        - $ref: '#/definitions/model.PersonaRef'
+        description: Персона (должность) пользователя; `null`, если не назначена или
+          была удалена.
+        x-nullable: true
+      role:
+        description: 'Роль: `admin` — администратор из .env, `user` — обычный пользователь.'
+        enum:
+        - admin
+        - user
+        example: user
+        type: string
+    type: object
+  model.UserNotificationSettings:
+    properties:
+      created_at:
+        type: string
+      days_before_due:
+        type: integer
+      email:
+        type: string
+      email_enabled:
+        type: boolean
+      email_verified:
+        type: boolean
+      send_time:
+        type: string
+      timezone:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  request.AssistantAskRequest:
+    properties:
+      channel:
+        description: 'Канал обращения: web (по умолчанию) или miniapp.'
+        enum:
+        - web
+        - miniapp
+        example: web
+        type: string
+      question:
+        description: Вопрос на естественном языке, 1–500 символов.
+        example: что просрочено?
+        type: string
+    type: object
+  request.CreatePersonaRequest:
+    properties:
+      description:
+        description: Описание, до 255 символов. Необязательно; пустая строка сохраняется
+          как `null`.
+        example: Оплачивает аренду и подписки
+        maxLength: 255
+        type: string
+      name:
+        description: Название, 1–64 символа (пробелы по краям обрезаются), уникально
+          без учёта регистра.
+        example: Бухгалтер
+        maxLength: 64
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  request.CreateRecurrentPaymentRequest:
+    properties:
+      amount:
+        type: integer
+      assignee_id:
+        type: string
+      currency:
+        type: string
+      day_offset:
+        type: integer
+      description:
+        type: string
+      frequency:
+        type: string
+      interval:
+        type: integer
+      start_date:
+        type: string
+    type: object
+  request.CreateUserRequest:
+    properties:
+      full_name:
+        description: Полное имя пользователя, отображается в профиле.
+        example: Иван Петров
+        maxLength: 64
+        minLength: 3
+        type: string
+      login:
+        description: Уникальный логин, используется для входа.
+        example: ivan.petrov
+        maxLength: 64
+        minLength: 3
+        type: string
+      password:
+        description: 'Пароль, минимум 8 символов. Роль не передаётся: создаётся всегда
+          обычный пользователь.'
+        example: Str0ngPass!2026
+        minLength: 8
+        type: string
+      persona_id:
+        description: |-
+          Персона (должность) из `GET /personas`. Необязательно: без поля пользователь
+          создаётся без персоны. Несуществующий id → `400 persona not found`.
+        example: 223f4e8e-98ea-4e50-9fb7-a9ea8984b2f1
+        format: uuid
+        type: string
+    required:
+    - full_name
+    - login
+    - password
+    type: object
+  request.LoginRequest:
+    properties:
+      login:
+        description: Логин зарегистрированного пользователя.
+        example: ivan.petrov
+        maxLength: 64
+        minLength: 3
+        type: string
+      password:
+        description: Пароль пользователя.
+        example: Str0ngPass!2026
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  request.MiniAppAuthRequest:
+    properties:
+      init_data:
+        description: Сырая строка initData из Telegram.WebApp (query-формат). Не логируется.
+        example: query_id=...&user=%7B...%7D&auth_date=...&hash=...
+        type: string
+    type: object
+  request.MiniAppLinkRequest:
+    properties:
+      init_data:
+        description: Сырая строка initData из Telegram.WebApp. Не логируется.
+        example: query_id=...&user=%7B...%7D&auth_date=...&hash=...
+        type: string
+      login:
+        description: Логин аккаунта в Invoice Keeper.
+        example: ivan.petrov
+        type: string
+      password:
+        description: Пароль аккаунта. В логи не попадает.
+        example: Str0ngPass!2026
+        type: string
+    type: object
+  request.PatchUserNotificationSettingsRequest:
+    properties:
+      days_before_due:
+        type: integer
+      email:
+        type: string
+      email_enabled:
+        type: boolean
+      send_time:
+        type: string
+      timezone:
+        type: string
+    type: object
+  request.UpdatePersonaRequest:
+    properties:
+      description:
+        description: |-
+          Новое описание, до 255 символов. Если поле не передано, не меняется;
+          пустая строка `""` удаляет описание.
+        example: Оплачивает аренду, подписки и налоги
+        maxLength: 255
+        type: string
+      name:
+        description: Новое название, 1–64 символа. Если поле не передано, текущее
+          значение не меняется.
+        example: Главный бухгалтер
+        maxLength: 64
+        minLength: 1
+        type: string
+    type: object
+  request.UpdateRecurrentPaymentRequest:
+    properties:
+      amount:
+        type: integer
+      assignee_id:
+        type: string
+      currency:
+        type: string
+      day_offset:
+        type: integer
+      description:
+        type: string
+      frequency:
+        type: string
+      interval:
+        type: integer
+      start_date:
+        type: string
+    type: object
+  request.UpdateUserNotificationSettingsRequest:
+    properties:
+      days_before_due:
+        type: integer
+      email:
+        type: string
+      email_enabled:
+        type: boolean
+      send_time:
+        type: string
+      timezone:
+        type: string
+    type: object
+  request.UserUpdateRequest:
+    properties:
+      full_name:
+        description: Новое полное имя. Если поле не передано, текущее значение не
+          меняется.
+        example: Иван Сергеевич Петров
+        maxLength: 64
+        minLength: 3
+        type: string
+      login:
+        description: Новый логин. Если поле не передано, текущее значение не меняется.
+        example: ivan.new
+        maxLength: 64
+        minLength: 3
+        type: string
+    type: object
+  response.APIError:
+    properties:
+      code:
+        description: Code — стабильный машинный код; клиентская логика ветвится по
+          нему.
+        example: payment_not_found
+        type: string
+      details:
+        description: Details содержит предметные данные, например currency или period
+          при ошибке валидации платежа.
+        type: object
+      message:
+        description: Message предназначен для диагностики; UI может локализовать сообщение
+          по Code.
+        example: payment not found
+        type: string
+      request_id:
+        description: RequestID совпадает с response header X-Request-ID и нужен для
+          диагностики.
+        example: f16cc96e-aaf4-44fb-a462-836ed4d0b135
+        type: string
+    type: object
+  response.AssistantAnswerResponse:
+    properties:
+      answer_id:
+        description: AnswerID совпадает с X-Request-ID.
+        example: f16cc96e-aaf4-44fb-a462-836ed4d0b135
+        type: string
+      blocks:
+        description: 'Блоки данных (до 3): occurrence_list, currency_totals, payment_list,
+          people_list.'
+        items:
+          type: object
+        type: array
+      error_code:
+        description: 'ErrorCode при status=error: llm_unavailable | data_unavailable
+          | timeout | bad_question.'
+        example: llm_unavailable
+        type: string
+      followups:
+        description: Подсказки «можно спросить…».
+        example:
+        - Кто отвечает за просроченные?
+        items:
+          type: string
+        type: array
+      meta:
+        description: Метаданные ответа (модель, токены, стоимость, латентность); показываются
+          только админу.
+        type: object
+      mode:
+        description: 'Режим: llm | rules | fake.'
+        enum:
+        - llm
+        - rules
+        - fake
+        example: llm
+        type: string
+      notes:
+        description: Оговорки, добавленные агентом.
+        example:
+        - другие валюты не учитывались и не пересчитывались
+        items:
+          type: string
+        type: array
+      status:
+        description: 'Статус: ok | partial | error.'
+        enum:
+        - ok
+        - partial
+        - error
+        example: ok
+        type: string
+      text:
+        description: Короткий текст ответа, plain text.
+        example: Просрочено 4 платежа.
+        type: string
+    type: object
+  response.AssistantStatusResponse:
+    properties:
+      enabled:
+        description: Включена ли фича (NLQ_ENABLED).
+        example: true
+        type: boolean
+      examples:
+        description: Примеры вопросов для подсказки в UI.
+        example:
+        - Что просрочено?
+        - Сколько платим в долларах в этом месяце?
+        - Кто отвечает за аренду?
+        items:
+          type: string
+        type: array
+      healthy:
+        description: Отвечает ли агент на /healthz (кэш 10 с). При выключенной фиче
+          всегда false.
+        example: true
+        type: boolean
+      mode:
+        description: 'Режим «мозга» агента: openrouter | rules | fake. Пусто, если
+          агент недоступен.'
+        example: openrouter
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        allOf:
+        - $ref: '#/definitions/response.APIError'
+        description: Error — единый envelope JSON-ошибок.
+    type: object
+  response.MiniAppAuthResponse:
+    properties:
+      access_token:
+        description: Access-токен (Bearer). Хранится в памяти JS, cookie не выставляются.
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      dm_available:
+        description: Может ли бот писать пользователю в личку (allows_write_to_pm
+          из initData).
+        example: true
+        type: boolean
+      expires_in:
+        description: Сколько секунд живёт access-токен.
+        example: 3600
+        type: integer
+      token_type:
+        description: Тип токена, всегда Bearer.
+        example: Bearer
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/response.MiniAppUser'
+        description: Профиль вошедшего пользователя.
+    type: object
+  response.MiniAppUser:
+    properties:
+      full_name:
+        description: Полное имя.
+        example: Иван Петров
+        type: string
+      id:
+        description: Идентификатор пользователя.
+        example: 9a191dfa-5e71-47aa-bcb2-ed5e9c071830
+        format: uuid
+        type: string
+      role:
+        description: 'Роль: admin | user. Админ получает полные права и в Mini App.'
+        enum:
+        - admin
+        - user
+        example: user
+        type: string
+    type: object
+  response.PaymentListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/response.PaymentResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  response.PaymentResponse:
+    properties:
+      amount:
+        type: integer
+      assignee_name:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      due_date:
+        type: string
+      ended:
+        type: boolean
+      id:
+        type: string
+      paid_at:
+        type: string
+      paid_date:
+        type: string
+      paid_late:
+        type: boolean
+      recurrent_payment_id:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  response.PersonaListResponse:
+    properties:
+      items:
+        description: Персоны, отсортированные по названию (без учёта регистра).
+        items:
+          $ref: '#/definitions/model.Persona'
+        type: array
+      total:
+        description: Сколько всего персон.
+        example: 1
+        type: integer
+    type: object
+  response.TelegramLinkCodeResponse:
+    properties:
+      deep_link:
+        description: Ссылка t.me для привязки, открывается в Telegram.
+        example: https://t.me/ik_dev_bot?start=link_AbC...
+        type: string
+      expires_in:
+        description: Сколько секунд живёт код.
+        example: 600
+        type: integer
+    type: object
+  response.TelegramLinkResponse:
+    properties:
+      bot_blocked:
+        description: Заблокировал ли пользователь бота.
+        type: boolean
+      dm_enabled:
+        description: Включена ли доставка в личку.
+        type: boolean
+      linked:
+        description: Привязан ли Telegram.
+        example: true
+        type: boolean
+      linked_at:
+        description: Когда привязан.
+        type: string
+      tg_username:
+        description: Username в Telegram (может быть пустым).
+        example: ivan
+        type: string
+    type: object
+  response.TelegramTeamChatResponse:
+    properties:
+      bound:
+        description: Привязан ли активный командный чат.
+        example: true
+        type: boolean
+      bound_at:
+        description: Когда привязан.
+        type: string
+      is_active:
+        description: Активен ли чат.
+        type: boolean
+      last_error:
+        description: Последняя ошибка доставки (например, «бот удалён из чата») или
+          null.
+        type: string
+      tg_chat_id:
+        description: ID чата в Telegram.
+        example: -1001234567890
+        type: integer
+      title:
+        description: Название чата или null.
+        example: Финансы
+        type: string
+    type: object
+  response.UserListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.User'
+        type: array
+      total:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: Напоминания о регулярных платежах.
+  title: Invoice Keeper API
+  version: "1.0"
+paths:
+  /assistant/ask:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Задаёт ассистенту вопрос на естественном языке о платежах команды
+        («что просрочено?», «сколько платим в долларах в этом месяце?»). Go
+        аутентифицирует пользователя, применяет лимиты, перечитывает роль из БД,
+        подписывает короткоживущий actor-JWT и проксирует вопрос в nlq-agent.
+        Ответ — конверт §7.9: короткий текст плюс блоки с данными. Числа и даты
+        считает БД, текст проходит grounding-check.
+      parameters:
+      - description: Вопрос и канал (web|miniapp)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AssistantAskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Конверт ответа агента
+          schema:
+            $ref: '#/definitions/response.AssistantAnswerResponse'
+        "400":
+          description: Пустой/длинный вопрос или неверный channel (bad_request)
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Нет или просрочен токен
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Превышен лимит (assistant_rate_limited), заголовок Retry-After
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "503":
+          description: Фича выключена/занята/агент недоступен (assistant_disabled|assistant_busy|assistant_unavailable)
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "504":
+          description: Агент не уложился в таймаут (assistant_timeout)
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Вопрос ассистенту (NL-запрос о платежах)
+      tags:
+      - Ассистент
+  /assistant/ask/stream:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        То же, что POST /assistant/ask, но ответ приходит потоком Server-Sent
+        Events: кадры step (идёт инструмент), block (блок данных), text (текст
+        после grounding) и done (полный конверт). Go проксирует поток от агента с
+        немедленным flush и отключённой буферизацией (X-Accel-Buffering: no); при
+        разрыве соединения с клиентом фоновая работа агента отменяется.
+      parameters:
+      - description: Вопрос и канал (web|miniapp)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AssistantAskRequest'
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: 'Поток SSE (event: step|block|text|done|error)'
+          schema:
+            type: string
+        "400":
+          description: bad_request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Нет или просрочен токен
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: assistant_rate_limited
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "503":
+          description: assistant_disabled|assistant_busy|assistant_unavailable
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "504":
+          description: assistant_timeout
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Вопрос ассистенту со стримингом (SSE)
+      tags:
+      - Ассистент
+  /assistant/status:
+    get:
+      description: |-
+        Включена ли фича и отвечает ли агент (кэш 10 с). UI прячет ассистента при
+        enabled=false. При выключенной фиче healthy=false и mode пустой.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статус ассистента
+          schema:
+            $ref: '#/definitions/response.AssistantStatusResponse'
+        "401":
+          description: Нет или просрочен токен
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Состояние ассистента
+      tags:
+      - Ассистент
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Проверяет логин и пароль пользователя. При успехе выставляет две
+        HttpOnly-куки: `AccessToken` (TTL 1 час) и `RefreshToken` (TTL 7 дней),
+        обе с флагами `Secure` и `SameSite=Strict`. Тело успешного ответа пустое —
+        токены передаются только через Set-Cookie.
+
+        Порядок проверок и коды ответов:
+        1. тело не парсится как JSON → `400 invalid request body`;
+        2. не прошла валидация (пустой login или password) → `400` с текстом ошибки;
+        3. пользователь не найден ИЛИ неверный пароль → `401 invalid credentials`.
+        В целях защиты от перебора все ошибки аутентификации отдаются одинаково (401),
+        без различия «нет такого логина» / «неверный пароль».
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/request.LoginRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Вход выполнен, куки AccessToken и RefreshToken установлены
+        "400":
+          description: Невалидное тело запроса или значения полей
+          schema:
+            type: string
+        "401":
+          description: Неверные учётные данные
+          schema:
+            type: string
+      summary: Авторизация пользователя
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: |-
+        Отзывает refresh-токен, взятый из HttpOnly-куки `RefreshToken`, и удаляет
+        обе куки `AccessToken` и `RefreshToken` (Set-Cookie с MaxAge=-1).
+
+        Операция идемпотентна и всегда возвращает `204`:
+        - куки нет или она пустая → просто чистим куки, БД не трогаем;
+        - токен уже отозван / не найден в БД → ошибка отзыва логируется,
+        но наружу не отдаётся (клиент всё равно считается вышедшим).
+        Действующий access-токен для вызова не требуется. Access-токен stateless —
+        сервер его не хранит, поэтому до истечения TTL он технически валиден;
+        клиент обязан удалить его сам (здесь мы лишь стираем куку).
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Выход выполнен, куки очищены (или выходить уже нечем)
+      summary: Выход пользователя из системы
+      tags:
+      - Auth
+  /auth/me:
+    get:
+      description: |-
+        Возвращает пользователя, которому принадлежит текущий access-токен. Frontend использует `id` как идентификатор текущего пользователя, `role` — для показа admin-only действий, `full_name` — для подписи интерфейса. Идентификатор пользователя из query/body не принимается и не может подменить пользователя из JWT.
+        Веб-панель обычно аутентифицируется HttpOnly cookie `AccessToken`; Bearer также поддерживается. Пароль и refresh token в ответ не входят. Если access token отсутствует/просрочен, middleware завершает запрос до handler. После изменения роли или удаления пользователя клиенту следует перечитать профиль либо выполнить повторный login.
+        Поле `persona` — персона (должность) пользователя `{id, name}` или `null`; на права не влияет.
+      operationId: authMe
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь
+          schema:
+            $ref: '#/definitions/model.User'
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Профиль текущего пользователя
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      description: |-
+        Обновляет пару токенов по refresh-токену из HttpOnly-куки `RefreshToken`.
+        Действующий access-токен НЕ требуется (он как раз истёк) — личность
+        подтверждается самим refresh-токеном.
+
+        Порядок проверок и коды ответов:
+        1. куки `RefreshToken` нет → `401 no refresh token`;
+        2. токен невалиден: не найден в БД, отозван (`revoked_at`), истёк
+        (`expires_at`) или не проходит проверку подписи → `401 invalid refresh token`;
+        3. пользователь из токена не найден в БД → `401 user not found`;
+        4. не удалось выпустить новую пару токенов → `500 failed to generate new tokens`.
+
+        При успехе выполняется ротация: выпускается новая пара, СНАЧАЛА сохраняется
+        новый refresh-токен, затем отзывается старый (одноразовость refresh-токена).
+        Обновлённые `AccessToken` и `RefreshToken` возвращаются через Set-Cookie,
+        тело ответа пустое.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Токены обновлены, новые куки установлены
+        "401":
+          description: Refresh-токен отсутствует, невалиден, истёк или отозван
+          schema:
+            type: string
+        "500":
+          description: Не удалось выпустить новые токены
+          schema:
+            type: string
+      summary: Обновление токенов (ротация)
+      tags:
+      - Auth
+  /me/telegram:
+    delete:
+      description: Удаляет привязку Telegram текущего пользователя.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Отвязано
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Привязки не было
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Отвязать Telegram
+      tags:
+      - Telegram
+    get:
+      description: Возвращает, привязан ли Telegram у текущего пользователя, и настройки
+        доставки.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Состояние привязки
+          schema:
+            $ref: '#/definitions/response.TelegramLinkResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Состояние привязки Telegram
+      tags:
+      - Telegram
+  /me/telegram/link-code:
+    post:
+      description: |-
+        Создаёт одноразовый deep link для привязки Telegram к текущему пользователю.
+        Ссылку нужно открыть в Telegram и подтвердить привязку кнопкой. Код живёт 10 минут,
+        одновременно активных кодов не больше трёх.
+        Коды ответов: `201` — ссылка создана; `429 too_many_link_codes` — слишком много
+        активных кодов; `503 telegram_disabled` — бот выключен в конфигурации.
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Deep link и TTL
+          schema:
+            $ref: '#/definitions/response.TelegramLinkCodeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "429":
+          description: Слишком много активных кодов
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "503":
+          description: Бот выключен
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Код привязки Telegram
+      tags:
+      - Telegram
+  /notifications/settings:
+    delete:
+      description: |-
+        Удаляет настройки email-уведомлений текущего пользователя.
+        Сам пользователь при этом не удаляется.
+        Идентификатор пользователя берётся из access-токена.
+
+        Коды ответов:
+        - 204 — настройки удалены;
+        - 401 — пользователь не авторизован;
+        - 404 — настройки не найдены;
+        - 500 — ошибка удаления.
+      operationId: deleteNotificationSettings
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Настройки удалены
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "404":
+          description: Настройки не найдены
+          schema:
+            type: string
+        "500":
+          description: Не удалось удалить настройки
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Удаление настроек email-уведомлений
+      tags:
+      - Notifications
+    get:
+      description: |-
+        Возвращает настройки email-уведомлений текущего авторизованного пользователя.
+        Идентификатор пользователя берётся из access-токена, передавать его в запросе не нужно.
+        Возвращаемые настройки включают email, статус подтверждения email, включение уведомлений,
+        количество дней до платежа, время отправки и часовой пояс.
+
+        Коды ответов:
+        - 200 — настройки получены;
+        - 401 — пользователь не авторизован;
+        - 404 — настройки ещё не созданы;
+        - 500 — внутренняя ошибка.
+      operationId: getNotificationSettings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Настройки уведомлений
+          schema:
+            $ref: '#/definitions/model.UserNotificationSettings'
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "404":
+          description: Настройки уведомлений не найдены
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Получение настроек email-уведомлений
+      tags:
+      - Notifications
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Обновляет только переданные поля настроек текущего пользователя.
+        Можно передать одно или несколько полей: email, email_enabled,
+        days_before_due, send_time, timezone. Хотя бы одно поле обязательно.
+        При изменении email он снова становится неподтверждённым.
+        Идентификатор пользователя берётся из access-токена.
+
+        Коды ответов:
+        - 204 — настройки обновлены;
+        - 400 — невалидное тело или значения полей;
+        - 401 — пользователь не авторизован;
+        - 404 — настройки не найдены;
+        - 500 — ошибка обновления.
+      operationId: patchNotificationSettings
+      parameters:
+      - description: Изменяемые поля настроек
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/request.PatchUserNotificationSettingsRequest'
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Настройки обновлены
+        "400":
+          description: Невалидное тело запроса или значения полей
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "404":
+          description: Настройки не найдены
+          schema:
+            type: string
+        "500":
+          description: Не удалось обновить настройки
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Частичное обновление настроек email-уведомлений
+      tags:
+      - Notifications
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Создаёт настройки уведомлений для текущего авторизованного пользователя.
+        Email должен быть корректным адресом; days_before_due должен находиться в диапазоне 0–365;
+        send_time задаётся в формате HH:MM; timezone должен быть корректным часовым поясом IANA.
+        При создании email считается неподтверждённым (email_verified=false).
+        Идентификатор пользователя берётся из access-токена.
+
+        Коды ответов:
+        - 201 — настройки созданы;
+        - 400 — невалидное тело или значения полей;
+        - 401 — пользователь не авторизован;
+        - 500 — ошибка создания настроек.
+      operationId: createNotificationSettings
+      parameters:
+      - description: Настройки уведомлений
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateUserNotificationSettingsRequest'
+      produces:
+      - text/plain
+      responses:
+        "201":
+          description: Настройки созданы
+        "400":
+          description: Невалидное тело запроса или значения полей
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "500":
+          description: Не удалось создать настройки
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Создание настроек email-уведомлений
+      tags:
+      - Notifications
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Полностью обновляет настройки уведомлений текущего пользователя.
+        Все обязательные поля должны присутствовать в запросе.
+        При изменении email он снова становится неподтверждённым.
+        Идентификатор пользователя берётся из access-токена.
+
+        Коды ответов:
+        - 204 — настройки обновлены;
+        - 400 — невалидное тело или значения полей;
+        - 401 — пользователь не авторизован;
+        - 404 — настройки не найдены;
+        - 500 — ошибка обновления.
+      operationId: updateNotificationSettings
+      parameters:
+      - description: Полный набор настроек
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateUserNotificationSettingsRequest'
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Настройки обновлены
+        "400":
+          description: Невалидное тело запроса или значения полей
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "404":
+          description: Настройки не найдены
+          schema:
+            type: string
+        "500":
+          description: Не удалось обновить настройки
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Полное обновление настроек email-уведомлений
+      tags:
+      - Notifications
+  /payment-occurrences:
+    get:
+      description: Возвращает периоды платежей всей команды. Фильтр ?assignee=me —
+        только свои.
+      parameters:
+      - description: me — только периоды текущего пользователя
+        in: query
+        name: assignee
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaymentListResponse'
+        "403":
+          description: Не удалось получить данные авторизации
+          schema:
+            type: string
+        "500":
+          description: Не удалось получить платежи
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить список платежей
+      tags:
+      - Payments
+  /payment-occurrences/{id}:
+    get:
+      description: Возвращает период платежа команды.
+      parameters:
+      - description: UUID платежа
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaymentResponse'
+        "400":
+          description: Некорректный UUID
+          schema:
+            type: string
+        "404":
+          description: Платеж не найден
+          schema:
+            type: string
+        "500":
+          description: Не удалось получить платеж
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить платеж по ID
+      tags:
+      - Payments
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        action=confirm — отметить оплату (paid_date опционально, по умолчанию сегодня; повторно — меняет дату).
+        action=cancel — снять оплату и очистить дату.
+        Без action — правка суммы/валюты/описания (только администратор); due_date менять нельзя.
+      parameters:
+      - description: UUID платежа
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Действие или поля для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.PatchPaymentOccurrenceRequest'
+      responses:
+        "204":
+          description: Платеж обновлен
+        "400":
+          description: Некорректный запрос
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав
+          schema:
+            type: string
+        "404":
+          description: Платеж не найден
+          schema:
+            type: string
+        "409":
+          description: Платеж уже оплачен
+          schema:
+            type: string
+        "500":
+          description: Не удалось изменить платеж
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Изменить платеж
+      tags:
+      - Payments
+  /payments/summary:
+    get:
+      description: Возвращает суммы оплаченных, неоплаченных и просроченных платежей
+        команды по валютам (минимальные единицы).
+      parameters:
+      - description: Нижняя граница due_date (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: Верхняя граница due_date (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.PaymentSummaryResponse'
+        "400":
+          description: Некорректный формат from/to
+          schema:
+            type: string
+        "500":
+          description: Не удалось получить сводку платежей
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить сводку платежей
+      tags:
+      - Payments
+  /personas:
+    get:
+      description: |-
+        Возвращает весь справочник персон без пагинации, отсортированный по названию
+        (без учёта регистра). Используется в форме создания пользователя: администратор
+        выбирает персону из этого списка и передаёт её `id` в `persona_id`
+        (`POST /users`).
+
+        Персона — это должность или зона ответственности (Бухгалтер, Руководитель, DevOps).
+        На права доступа она **не влияет**: права задаёт только роль (`admin` / `user`).
+
+        Поля элемента:
+        - `id` — UUID персоны;
+        - `name` — название;
+        - `description` — описание или `null`;
+        - `users_count` — сколько пользователей с этой персоной (удобно показать
+        перед удалением);
+        - `created_at` — когда создана.
+
+        Доступно только роли `admin`.
+
+        Коды ответов:
+        - `200` — объект со списком в `items` и количеством в `total` (пустой справочник —
+        `items: []`, `total: 0`);
+        - `401 unauthorized` — нет или просрочен access-токен (middleware Auth);
+        - `403 forbidden` — роль не `admin` (middleware IsAdmin);
+        - `500 failed to get personas` — ошибка БД.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список персон с total
+          schema:
+            $ref: '#/definitions/response.PersonaListResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав (требуется роль admin)
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Список персон
+      tags:
+      - Personas
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Добавляет персону в справочник. После этого её можно назначать новым
+        пользователям через `persona_id` в `POST /users`. Доступно только роли `admin`.
+
+        Требования к телу (иначе `400` с текстом ошибки):
+        - `name`: обязательно, 1–64 символа; пробелы по краям обрезаются;
+        - `description`: необязательно, до 255 символов; пустая строка сохраняется как `null`.
+
+        Название уникально **без учёта регистра**: «Бухгалтер» и « бухгалтер » —
+        одна и та же персона, повтор вернёт `409`.
+
+        Коды ответов:
+        - `201` — персона создана, в теле — созданная персона (`users_count: 0`);
+        - `400 invalid request body` — тело не парсится как JSON;
+        - `400 name must be 1-64 characters` / `400 description must be at most 255 characters`
+        — не прошла валидация;
+        - `401 unauthorized` / `403 forbidden` — из middleware Auth/IsAdmin;
+        - `409 persona with this name already exists` — такое название уже есть;
+        - `500 failed to create persona` — прочая ошибка БД.
+      parameters:
+      - description: Название и описание
+        in: body
+        name: persona
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreatePersonaRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная персона
+          schema:
+            $ref: '#/definitions/model.Persona'
+        "400":
+          description: Невалидное тело запроса или значения полей
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав (требуется роль admin)
+          schema:
+            type: string
+        "409":
+          description: Персона с таким названием уже есть
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Создание персоны
+      tags:
+      - Personas
+  /personas/{id}:
+    delete:
+      description: |-
+        Удаляет персону из справочника. Доступно только роли `admin`.
+
+        Пользователи с этой персоной **не удаляются** и не блокируются: у них персона
+        становится пустой (`persona: null` в `GET /users` и `GET /auth/me`). Права
+        пользователей не меняются — персона на них не влияет. Сколько пользователей
+        затронет удаление, видно в `users_count` из `GET /personas`.
+
+        Коды ответов:
+        - `204` — персона удалена (тело пустое);
+        - `400 invalid persona id` — `id` в пути не UUID;
+        - `401 unauthorized` / `403 forbidden` — из middleware Auth/IsAdmin;
+        - `404 persona not found` — персоны с таким `id` нет (в т.ч. уже удалена);
+        - `500 failed to delete persona` — ошибка БД.
+      parameters:
+      - description: ID персоны (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Персона удалена
+        "400":
+          description: id не UUID
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав (требуется роль admin)
+          schema:
+            type: string
+        "404":
+          description: Персона не найдена
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Удаление персоны
+      tags:
+      - Personas
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Частичное (PATCH) обновление персоны: название и/или описание. Пользователи,
+        которым назначена персона, сразу видят новое название (`GET /users`,
+        `GET /auth/me`) — персона хранится ссылкой, а не копией. Доступно только роли `admin`.
+
+        Тело — только изменяемые поля (оба необязательны, но хотя бы одно обязательно):
+        - `name`: если передано — 1–64 символа, пробелы по краям обрезаются;
+        - `description`: если передано — до 255 символов; пустая строка `""` удаляет описание
+        (станет `null`); если не передано — не меняется.
+
+        Коды ответов:
+        - `200` — персона обновлена, в теле — актуальная персона;
+        - `400 invalid persona id` — `id` в пути не UUID;
+        - `400 invalid request body` — тело не парсится; либо текст ошибки валидации
+        (в т.ч. `at least one field must be provided`, если не передано ни одно поле);
+        - `401 unauthorized` / `403 forbidden` — из middleware Auth/IsAdmin;
+        - `404 persona not found` — персоны с таким `id` нет;
+        - `409 persona with this name already exists` — новое название занято
+        другой персоной (без учёта регистра);
+        - `500 failed to update persona` — прочая ошибка БД.
+      parameters:
+      - description: ID персоны (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Изменяемые поля
+        in: body
+        name: persona
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdatePersonaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновлённая персона
+          schema:
+            $ref: '#/definitions/model.Persona'
+        "400":
+          description: id не UUID или невалидное тело запроса
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав (требуется роль admin)
+          schema:
+            type: string
+        "404":
+          description: Персона не найдена
+          schema:
+            type: string
+        "409":
+          description: Персона с таким названием уже есть
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Изменение персоны
+      tags:
+      - Personas
+  /ping:
+    get:
+      description: |-
+        Лёгкий liveness-пробник: подтверждает, что HTTP-сервер поднят и роутинг
+        работает. НЕ проверяет доступность PostgreSQL и внешних сервисов —
+        всегда отвечает `200 pong`, если процесс жив. Аутентификация не требуется.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: pong
+          schema:
+            type: string
+      summary: Проверка доступности API-сервера
+      tags:
+      - Система
+  /recurring-payments:
+    get:
+      description: Возвращает все шаблоны регулярных платежей команды (включая остановленные).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.RecurrentPayment'
+            type: array
+        "500":
+          description: Не удалось получить регулярные платежи
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Получить список регулярных платежей
+      tags:
+      - Recurring Payments
+    post:
+      consumes:
+      - application/json
+      description: Создает шаблон регулярного платежа и назначает ответственного (только
+        администратор).
+      parameters:
+      - description: Данные регулярного платежа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateRecurrentPaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Идентификатор созданного платежа
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Некорректное тело запроса
+          schema:
+            type: string
+        "500":
+          description: Не удалось создать регулярный платеж
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Создать регулярный платеж
+      tags:
+      - Recurring Payments
+  /recurring-payments/{id}:
+    delete:
+      description: 'Мягко останавливает шаблон: новые периоды не создаются, напоминания
+        прекращаются, история сохраняется.'
+      parameters:
+      - description: UUID регулярного платежа
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Регулярный платеж остановлен
+        "400":
+          description: Некорректный UUID
+          schema:
+            type: string
+        "404":
+          description: Регулярный платеж не найден
+          schema:
+            type: string
+        "500":
+          description: Не удалось остановить регулярный платеж
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Остановить регулярный платеж
+      tags:
+      - Recurring Payments
+    patch:
+      consumes:
+      - application/json
+      description: Частично обновляет сумму, валюту, описание и ответственного. Поля
+        графика неизменяемы.
+      parameters:
+      - description: UUID регулярного платежа
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Новые параметры регулярного платежа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateRecurrentPaymentRequest'
+      responses:
+        "204":
+          description: Регулярный платеж обновлен
+        "400":
+          description: Некорректный UUID или тело запроса
+          schema:
+            type: string
+        "404":
+          description: Регулярный платеж не найден
+          schema:
+            type: string
+        "500":
+          description: Не удалось обновить регулярный платеж
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Обновить регулярный платеж
+      tags:
+      - Recurring Payments
+  /telegram/miniapp/auth:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Проверяет подпись initData Telegram Mini App и, если этот Telegram уже
+        привязан к аккаунту, выпускает access-токен (только access, без refresh и cookie).
+        Роль берётся из БД, поэтому админ получает полные права и в Mini App.
+        Коды ответов: `200` — вошли; `401 invalid_init_data` / `init_data_expired` —
+        подпись неверна или данные старше 10 минут; `409 telegram_not_linked` — этот
+        Telegram ещё не привязан (нужно вызвать `/telegram/miniapp/link`).
+        Сырые initData не логируются. Лимит `30/min` по IP.
+      parameters:
+      - description: initData из Telegram.WebApp
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.MiniAppAuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access-токен и профиль
+          schema:
+            $ref: '#/definitions/response.MiniAppAuthResponse'
+        "400":
+          description: Невалидное тело запроса
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Неверная или устаревшая initData
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Telegram не привязан
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "503":
+          description: Бот выключен
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Вход в Mini App по привязке
+      tags:
+      - Telegram
+  /telegram/miniapp/link:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Проверяет подпись initData, затем логин и пароль аккаунта. При успехе
+        привязывает текущий Telegram к аккаунту и выпускает access-токен (пароль
+        вводится один раз). Коды ответов: `200` — привязано и вошли;
+        `401 invalid_init_data` / `init_data_expired` — проблема с initData;
+        `401 invalid_credentials` — неверный логин или пароль (не различаются);
+        `409 telegram_already_linked` — этот Telegram уже за другим аккаунтом.
+        Сырые initData и пароль не логируются. Лимит `10/min` по IP, как у `/auth/login`.
+      parameters:
+      - description: initData, логин и пароль
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/request.MiniAppLinkRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access-токен и профиль
+          schema:
+            $ref: '#/definitions/response.MiniAppAuthResponse'
+        "400":
+          description: Невалидное тело запроса
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Неверная initData или учётные данные
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Telegram уже привязан к другому аккаунту
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "503":
+          description: Бот выключен
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Привязка и вход в Mini App по логину/паролю
+      tags:
+      - Telegram
+  /telegram/team-chat:
+    get:
+      description: Возвращает активный командный чат, куда уходят напоминания. Доступно
+        роли `admin`.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Состояние командного чата
+          schema:
+            $ref: '#/definitions/response.TelegramTeamChatResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Командный чат (админ)
+      tags:
+      - Telegram
+  /telegram/team-chat/test:
+    post:
+      description: Отправляет тестовое сообщение в командный чат. Доступно роли `admin`.
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Сообщение отправлено
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Командный чат не привязан
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "502":
+          description: Ошибка Telegram
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Тест командного чата (админ)
+      tags:
+      - Telegram
+  /telegram/webhook:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Приём апдейтов Telegram. Проверяется заголовок X-Telegram-Bot-Api-Secret-Token,
+        тело разбирается как Update. Ответ всегда 200 (кроме неверного секрета — 401).
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Неверный секрет
+      summary: Webhook Telegram
+      tags:
+      - Telegram
+  /users:
+    get:
+      description: |-
+        Возвращает всех пользователей (обычных пользователей и администраторов) без пагинации.
+        Доступно только роли `admin`. Поле `password_hash` в ответ не попадает
+        (скрыто на уровне сериализации).
+        У каждого пользователя есть поле `persona` — назначенная персона `{id, name}`
+        или `null`, если персона не назначена или была удалена.
+
+        Коды ответов:
+        - `200` — объект с массивом пользователей в `items` и общим количеством в `total`;
+        - `401 unauthorized` — нет/просрочен access-токен;
+        - `403 forbidden` — роль не `admin`;
+        - `500 failed to get users` — ошибка БД.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список пользователей с total
+          schema:
+            $ref: '#/definitions/response.UserListResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав (требуется роль admin)
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Список пользователей
+      tags:
+      - Admin
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Создаёт нового пользователя с ролью `user`. Роль не передаётся: администратор
+        задаётся только в .env и через API не создаётся. Пароль хэшируется на сервере
+        (bcrypt), `login` должен быть уникальным. Доступно только роли `admin`.
+
+        Требования к телу (иначе `400` с текстом ошибки):
+        - `full_name`: 3–64 символа;
+        - `login`: 3–32 символа, только `[a-zA-Z0-9_.-]`;
+        - `password`: 8–72 байта (верхняя граница — ограничение bcrypt);
+        - `persona_id`: необязательно, UUID персоны из `GET /personas`.
+
+        Коды ответов:
+        - `201` — пользователь создан (тело пустое);
+        - `400 invalid request body` — тело не парсится; либо текст ошибки валидации;
+        - `400 persona not found` — персоны с таким `persona_id` нет;
+        - `401 unauthorized` — нет/просрочен access-токен (middleware Auth);
+        - `403 forbidden` — роль не `admin` (middleware IsAdmin);
+        - `409 user with this login already exists` — нарушение уникальности login;
+        - `500 failed to create user` — прочая ошибка БД.
+      parameters:
+      - description: Данные создаваемого пользователя
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateUserRequest'
+      produces:
+      - text/plain
+      responses:
+        "201":
+          description: Пользователь создан
+        "400":
+          description: Невалидное тело запроса, значения полей или несуществующая
+            персона
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав (требуется роль admin)
+          schema:
+            type: string
+        "409":
+          description: Пользователь с таким login уже существует
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Создание обычного пользователя
+      tags:
+      - Admin
+  /users/{id}:
+    delete:
+      description: |-
+        Удаляет обычного пользователя по идентификатору (path-параметр `id`).
+        Доступно только роли `admin`.
+
+        Защитные проверки и коды ответов:
+        - `id` не UUID → `400 invalid user id`;
+        - пользователь с таким `id` не найден → `404 user not found`;
+        - удаляемый — администратор (в т.ч. собственная учётка) →
+        `403 admin account is managed via .env`;
+        - на пользователя ссылаются другие записи → `409`;
+        - `401 unauthorized` / `403 forbidden` — из middleware Auth/IsAdmin;
+        - прочая ошибка БД → `500 failed to delete user`;
+        - `200` — пользователь удалён.
+      parameters:
+      - description: ID пользователя (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Пользователь удалён
+        "400":
+          description: id не является UUID
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав или попытка удалить администратора
+          schema:
+            type: string
+        "404":
+          description: Пользователь не найден
+          schema:
+            type: string
+        "409":
+          description: На пользователя ссылаются другие записи
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Удаление пользователя
+      tags:
+      - Admin
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Частичное (PATCH) обновление данных обычного пользователя: ФИО и/или логин.
+        Роль и пароль этим методом не меняются. Учётку администратора менять нельзя —
+        она задаётся в .env. Доступно только роли `admin`.
+
+        Тело — только изменяемые поля (оба опциональны, но хотя бы одно обязательно):
+        - `full_name`: если передан — 3–64 символа;
+        - `login`: если передан — 3–32 символа, только `[a-zA-Z0-9_.-]`.
+
+        Коды ответов:
+        - `200` — пользователь обновлён;
+        - `400 invalid user id` — `id` не UUID;
+        - `400 invalid request body` — тело не парсится; либо текст ошибки валидации
+        (в т.ч. `at least one field must be provided`, если оба поля пусты);
+        - `401 unauthorized` / `403 forbidden` — из middleware Auth/IsAdmin;
+        - `403 admin account is managed via .env` — попытка изменить администратора;
+        - `404 user not found` — пользователя с таким `id` нет;
+        - `409 user with this login already exists` — логин занят;
+        - `500 failed to update user` — ошибка БД.
+      parameters:
+      - description: ID пользователя (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Обновляемые поля
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserUpdateRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Пользователь обновлён
+        "400":
+          description: id не UUID или невалидное тело запроса
+          schema:
+            type: string
+        "401":
+          description: Не авторизован
+          schema:
+            type: string
+        "403":
+          description: Недостаточно прав или попытка изменить администратора
+          schema:
+            type: string
+        "404":
+          description: Пользователь не найден
+          schema:
+            type: string
+        "409":
+          description: Логин уже занят
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      security:
+      - CookieAuth: []
+      - BearerAuth: []
+      summary: Обновление пользователя
+      tags:
+      - Admin
+securityDefinitions:
+  BearerAuth:
+    description: '"Bearer <access token>"'
+    in: header
+    name: Authorization
+    type: apiKey
+  CookieAuth:
+    in: cookie
+    name: AccessToken
+    type: apiKey
+swagger: "2.0"
+tags:
+- description: Служебные эндпоинты (проверка доступности).
+  name: Система
+- description: Вход, выход, обновление токенов и текущий пользователь.
+  name: Auth
+- description: Управление пользователями — только администратор. Учётка администратора
+    задаётся в .env и через API не меняется.
+  name: Admin
+- description: Справочник персон — должностей или зон ответственности (Бухгалтер,
+    Руководитель, DevOps). Ведёт администратор; при создании пользователя персона
+    выбирается из этого списка (`persona_id` в `POST /users`). На права доступа не
+    влияет — права задаёт роль.
+  name: Personas
