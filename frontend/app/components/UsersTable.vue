@@ -40,7 +40,7 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
       <span>
         <span class="role" :class="user.role">{{ roleName(user.role) }}</span>
       </span>
-      <span v-if="user.persona" class="persona"><span class="dot" />{{ user.persona.name }}</span>
+      <span v-if="user.persona">{{ user.persona.name }}</span>
       <span v-else class="muted">—</span>
       <!-- backend has no payments or telegram yet -->
       <span class="muted">—</span>
@@ -127,19 +127,6 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
   border: 1px solid var(--line);
   color: var(--ink-2);
   line-height: 20px;
-}
-
-.persona {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
 }
 
 .action {
