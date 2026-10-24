@@ -126,7 +126,7 @@ try {
     const name = await page.locator('.me-name').innerText()
     const role = await page.locator('.me-role').innerText()
     assert(name === 'Администратор', `name "${name}"`)
-    assert(role === 'admin · .env', `role "${role}"`)
+    assert(role === 'Администратор', `role "${role}"`)
     await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {})
     await shot('A1-overview')
   })
@@ -560,7 +560,7 @@ try {
     await loginWith(up, { login: LOGIN, password: userPassword })
     await up.waitForURL('**/user/overview', { timeout: 15000 })
     const role = await up.locator('.me-role').innerText()
-    assert(role === `user · ${P1}`, `role "${role}"`)
+    assert(role === `Пользователь · ${P1}`, `role "${role}"`)
     assert(await up.getByRole('button', { name: 'Новый платёж' }).count() === 0, 'user sees «Новый платёж»')
     await up.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {})
     await up.screenshot({ path: `${SHOTS}U1-overview.png` })
@@ -604,7 +604,11 @@ try {
       await page.locator('h1.title', { hasText: label }).waitFor({ timeout: 5000 }).catch(() => {})
       const title = await page.locator('h1.title').innerText()
       assert(title === label, `${path}: title "${title}"`)
-      assert(await page.locator('aside.sidebar .item.active').innerText() === label, `${path}: nav item not active`)
+      // settings is a round icon at the bottom of the sidebar, not a nav item
+      const active = label === 'Настройки'
+        ? await page.locator('aside.sidebar a.settings.active').count() === 1
+        : await page.locator('aside.sidebar .item.active').innerText() === label
+      assert(active, `${path}: nav item not active`)
     }
     // personas live in the panel on the users page now, the page and its nav item are gone
     assert(await page.locator('aside.sidebar').getByRole('link', { name: 'Должности' }).count() === 0, 'Должности still in the nav')

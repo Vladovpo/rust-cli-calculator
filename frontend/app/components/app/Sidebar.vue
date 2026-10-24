@@ -10,14 +10,11 @@ const mainNav = computed<NavItem[]>(() => [
   { label: 'Календарь', to: `/${role.value}/calendar`, icon: 'calendar' },
   { label: 'Периоды', to: `/${role.value}/payments`, icon: 'payments' },
   { label: 'Регулярные', to: `/${role.value}/recurring`, icon: 'recurring' },
-  // admins have it in their own section below
-  ...(isAdmin.value ? [] : [{ label: 'Настройки', to: '/user/settings', icon: 'settings' } as NavItem]),
 ])
 
 const adminNav: NavItem[] = [
   { label: 'Пользователи', to: '/admin/users', icon: 'users' },
   { label: 'Журнал', to: '/admin/log', icon: 'log' },
-  { label: 'Настройки', to: '/admin/settings', icon: 'settings' },
 ]
 
 // one highlight slides from the old page's item to the new one, across both sections
@@ -45,8 +42,8 @@ const user = computed(() => ({
   initials: initials(me.value?.full_name),
   name: me.value?.full_name ?? '',
   role: me.value?.role === 'admin'
-    ? 'admin'
-    : ['user', me.value?.persona?.name].filter(Boolean).join(' · '),
+    ? roleName('admin')
+    : [roleName('user'), me.value?.persona?.name].filter(Boolean).join(' · '),
 }))
 
 const { prefs, switchTheme } = usePrefs()
@@ -92,10 +89,14 @@ function toggleTheme(e: MouseEvent) {
       демо-режим
     </NuxtLink>
 
+    <!-- settings on the left, the theme on the right: two round icon buttons -->
     <div class="status">
+      <NuxtLink :to="`/${role}/settings`" class="round settings" active-class="active" aria-label="Настройки" title="Настройки">
+        <UiIcon name="settings" :size="14" />
+      </NuxtLink>
       <button
         type="button"
-        class="theme"
+        class="round theme"
         :aria-label="isLight ? 'Тёмная тема' : 'Светлая тема'"
         :title="isLight ? 'Тёмная тема' : 'Светлая тема'"
         @click="toggleTheme"
@@ -119,7 +120,7 @@ function toggleTheme(e: MouseEvent) {
           <UiAvatar :initials="user.initials" :size="30" />
           <div>
             <p class="me-name">{{ user.name }}</p>
-            <p class="me-role mono">{{ user.role }}</p>
+            <p class="me-role">{{ user.role }}</p>
           </div>
         </template>
         <template #fallback>
@@ -237,15 +238,16 @@ function toggleTheme(e: MouseEvent) {
 .status {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  margin: auto 4px 12px 12px;
+  justify-content: space-between;
+  /* the settings circle lines up with the nav icons above it */
+  margin: auto 4px 12px 6px;
 }
 
 .demo + .status {
   margin-top: 0;
 }
 
-.theme {
+.round {
   display: grid;
   place-items: center;
   width: 28px;
@@ -258,9 +260,16 @@ function toggleTheme(e: MouseEvent) {
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.theme:hover {
+.round:hover {
   color: var(--ink);
   border-color: var(--line-strong);
+}
+
+/* on the settings page: the same soft blue as the active nav item */
+.round.active {
+  background: var(--accent-bg);
+  border-color: transparent;
+  color: var(--accent-ink);
 }
 
 .me {

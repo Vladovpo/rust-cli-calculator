@@ -38,7 +38,7 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
         <span class="login mono">{{ user.login }}</span>
       </span>
       <span>
-        <span class="role mono" :class="user.role">{{ user.role }}</span>
+        <span class="role" :class="user.role">{{ roleName(user.role) }}</span>
       </span>
       <span v-if="user.persona" class="persona"><span class="dot" />{{ user.persona.name }}</span>
       <span v-else class="muted">—</span>
@@ -73,7 +73,7 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
 
 .row {
   display: grid;
-  grid-template-columns: 210px 80px 140px 102px 72px 74px 1fr;
+  grid-template-columns: 180px 120px 130px 88px 70px 90px 1fr;
   align-items: center;
   height: 60px;
   padding: 0 16px;
