@@ -262,13 +262,13 @@ try {
   })
 
   await check('T32', async () => {
-    // stopped payments hidden by default, the switch shows them
+    // stopped payments hidden by default, «Прекращённые» shows them
     assert(await page.getByText('Старый CRM-сервис').count() === 0, 'stopped payment visible by default')
-    await page.getByRole('switch', { name: /Показать прекращённые/ }).click()
+    await page.getByRole('button', { name: /Прекращённые/ }).click()
     await page.getByText('Старый CRM-сервис').waitFor({ timeout: 5000 })
     assert(await page.getByRole('button', { name: 'История' }).count() === 1, 'no «История» on the stopped row')
-    await page.getByRole('switch', { name: /Показать прекращённые/ }).click()
-    assert(await page.getByText('Старый CRM-сервис').count() === 0, 'switch did not hide it again')
+    await page.getByRole('button', { name: /Активные/ }).click()
+    assert(await page.getByText('Старый CRM-сервис').count() === 0, '«Активные» did not hide it again')
   })
 
   const spaces = text => text.replace(/\s/g, ' ')
