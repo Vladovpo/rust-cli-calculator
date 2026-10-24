@@ -72,7 +72,7 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
 
 <template>
   <div>
-    <AppPageHeader title="Платежи" subtitle="Периоды регулярных платежей: срок, оплата и просрочка">
+    <AppPageHeader title="Периоды" subtitle="Сроки регулярных платежей: оплата и просрочка">
       <template v-if="isAdmin" #actions>
         <UiButton variant="primary" class="new" @click="showNewPayment = true">Новый платёж</UiButton>
       </template>

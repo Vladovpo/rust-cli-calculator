@@ -207,7 +207,7 @@ try {
   })
 
   await check('T45', async () => {
-    // month picker on Платежи: 12-month dropdown, another month is empty, arrows step back
+    // month picker on Периоды: 12-month dropdown, another month is empty, arrows step back
     const picker = page.locator('.filters .month-picker')
     await picker.locator('.label').click()
     const grid = picker.locator('.dropdown')
@@ -778,8 +778,8 @@ try {
     await p.getByRole('button', { name: 'Отметить оплату' }).click()
     await p.locator('.banner').waitFor({ state: 'detached', timeout: 5000 })
 
-    // Платежи: a paid row opens the popover too, and the mark can be taken off
-    await p.locator('aside.sidebar').getByRole('link', { name: 'Платежи' }).click()
+    // Периоды: a paid row opens the popover too, and the mark can be taken off
+    await p.locator('aside.sidebar').getByRole('link', { name: 'Периоды' }).click()
     await p.waitForURL('**/admin/payments')
     await rowsOf(p).filter({ hasText: 'Аренда офиса' }).click()
     await p.getByRole('button', { name: 'Снять отметку' }).click()

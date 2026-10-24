@@ -7,7 +7,7 @@ interface NavItem { label: string, to: string, icon: IconName }
 
 const mainNav = computed<NavItem[]>(() => [
   { label: 'Обзор', to: `/${role.value}/overview`, icon: 'overview' },
-  { label: 'Платежи', to: `/${role.value}/payments`, icon: 'payments' },
+  { label: 'Периоды', to: `/${role.value}/payments`, icon: 'payments' },
   { label: 'Календарь', to: `/${role.value}/calendar`, icon: 'calendar' },
   { label: 'Регулярные', to: `/${role.value}/recurring`, icon: 'recurring' },
   // admins have it in their own section below
@@ -78,6 +78,7 @@ function toggleTheme(e: MouseEvent) {
       </template>
 
       <template v-if="isAdmin">
+        <div class="rule section-rule" />
         <p class="kicker section">Администратор</p>
         <template v-for="item in adminNav" :key="item.label">
           <NuxtLink :to="item.to" class="item" active-class="active">
@@ -214,8 +215,12 @@ function toggleTheme(e: MouseEvent) {
   transition: transform 0.5s var(--ease-out), height 0.5s var(--ease-out);
 }
 
+.section-rule {
+  margin: 14px 12px 0;
+}
+
 .section {
-  margin: 21px 12px 12px;
+  margin: 14px 12px 12px;
 }
 
 .demo {
