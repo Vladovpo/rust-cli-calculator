@@ -92,7 +92,7 @@ function toggleTheme(e: MouseEvent) {
     <!-- settings on the left, the theme on the right: two round icon buttons -->
     <div class="status">
       <NuxtLink :to="`/${role}/settings`" class="round settings" active-class="active" aria-label="Настройки" title="Настройки">
-        <UiIcon name="settings" :size="14" />
+        <UiIcon name="gear" :size="15" />
       </NuxtLink>
       <button
         type="button"
