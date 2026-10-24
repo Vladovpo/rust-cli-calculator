@@ -42,16 +42,32 @@ onMounted(() => {
 })
 onBeforeUnmount(() => observer?.disconnect())
 
+// a line is 22px at least. with free room in the cell it grows (up to 54px) and the name wraps
+// to a few lines instead of ending with …
+const lineHeight = 22
+const maxHeight = 54
+
+function chipHeight(shown: number, more: number) {
+  if (!shown) return lineHeight
+  const rows = shown + more
+  const free = cellHeight.value - 42 - (rows - 1) * 4 - more * lineHeight
+  return Math.min(maxHeight, Math.max(lineHeight, Math.floor(free / shown)))
+}
+
 const cells = computed(() => monthCells(props.year, props.month, weeks.value).map((cell) => {
   const onDay = cell.inMonth ? props.periods.filter(p => fromRu(p.due) === cell.iso) : []
+  const fit = onDay.length > capacity.value ? capacity.value - 1 : capacity.value
+  const height = chipHeight(Math.min(fit, onDay.length), onDay.length > fit ? 1 : 0)
   return {
     ...cell,
+    height,
+    lines: Math.max(1, Math.floor((height - 6) / 16)),
     key: cell.iso,
     day: String(cell.day).padStart(2, '0'),
     today: cell.inMonth && cell.day === props.today,
     // as many names as fit, the rest of the day is one "ещё N" line (which takes a line too)
-    shown: onDay.slice(0, onDay.length > capacity.value ? capacity.value - 1 : capacity.value),
-    hidden: onDay.slice(onDay.length > capacity.value ? capacity.value - 1 : capacity.value),
+    shown: onDay.slice(0, fit),
+    hidden: onDay.slice(fit),
   }
 }))
 </script>
@@ -62,7 +78,13 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
       {{ name }}
     </span>
 
-    <div v-for="cell in cells" :key="cell.key" class="cell" :class="{ weekend: cell.weekend }">
+    <div
+      v-for="cell in cells"
+      :key="cell.key"
+      class="cell"
+      :class="{ weekend: cell.weekend }"
+      :style="{ '--chip-h': `${cell.height}px`, '--lines': cell.lines }"
+    >
       <span v-if="cell.today" class="today"><span class="circle">{{ cell.day }}</span>сегодня</span>
       <span v-else class="day mono" :class="{ other: !cell.inMonth }">{{ cell.day }}</span>
 
@@ -195,10 +217,22 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
   filter: brightness(1.08);
 }
 
+/* the height comes from the cell (--chip-h), the corners stay round but not a full stadium on tall ones */
+.payment {
+  height: var(--chip-h, 22px);
+  border-radius: min(calc(var(--chip-h, 22px) / 2), 14px);
+}
+
+/* the name wraps to as many lines as fit, the last one ends with … */
 .name {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 16px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--lines, 1);
 }
 
 .dot {
