@@ -92,7 +92,10 @@ function toggleTheme(e: MouseEvent) {
     <!-- settings on the left, the theme on the right: two round icon buttons -->
     <div class="status">
       <NuxtLink :to="`/${role}/settings`" class="round settings" active-class="active" aria-label="Настройки" title="Настройки">
-        <UiIcon name="gear" :size="15" />
+        <!-- drawn on the same 16px grid and at the same size as the sun and moon next to it -->
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" stroke="currentColor" stroke-width="0.6" stroke-linejoin="round" d="M6.67 2.66 L6.99 0.87 L9.01 0.87 L9.33 2.66 L10.84 3.29 L12.32 2.24 L13.76 3.68 L12.71 5.16 L13.34 6.67 L15.13 6.99 L15.13 9.01 L13.34 9.33 L12.71 10.84 L13.76 12.32 L12.32 13.76 L10.84 12.71 L9.33 13.34 L9.01 15.13 L6.99 15.13 L6.67 13.34 L5.16 12.71 L3.68 13.76 L2.24 12.32 L3.29 10.84 L2.66 9.33 L0.87 9.01 L0.87 6.99 L2.66 6.67 L3.29 5.16 L2.24 3.68 L3.68 2.24 L5.16 3.29ZM8 5.7a2.3 2.3 0 1 0 0 4.6a2.3 2.3 0 1 0 0 -4.6Z" />
+        </svg>
       </NuxtLink>
       <button
         type="button"
@@ -265,11 +268,10 @@ function toggleTheme(e: MouseEvent) {
   border-color: var(--line-strong);
 }
 
-/* on the settings page: the same soft blue as the active nav item */
+/* on the settings page: looks hovered, no colour */
 .round.active {
-  background: var(--accent-bg);
-  border-color: transparent;
-  color: var(--accent-ink);
+  color: var(--ink);
+  border-color: var(--line-strong);
 }
 
 .me {
