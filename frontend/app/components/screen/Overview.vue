@@ -55,7 +55,7 @@ function mark(period: Period) {
     <OverdueBanner
       v-if="overdue"
       :title="overdueTitle"
-      :text="`${overdue.title} · срок ${overdue.due.slice(0, 5)} · просрочка ${overdue.overdue} · отвечает: ${owner}`"
+      :text="`${overdue.title} · срок ${overdue.due.slice(0, 5)} · просрочка ${overdue.overdue} · ответственный: ${owner}`"
       :amount="overdue.amount"
       :can-mark="payments.canMark(overdue)"
       @mark="mark(overdue)"

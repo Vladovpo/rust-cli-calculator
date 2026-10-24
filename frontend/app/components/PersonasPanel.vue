@@ -8,8 +8,8 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.items)
 </script>
 
 <template>
-  <!-- same look as the users table next to it, split off by a hairline -->
-  <aside class="table panel">
+  <!-- the same rows as the users table next to it, in a rounded card -->
+  <aside class="card table panel">
     <div class="row head">
       <span>Должность</span>
       <span class="right">Польз.</span>
@@ -46,8 +46,7 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.items)
 .table {
   flex-shrink: 0;
   width: 320px;
-  padding-left: 16px;
-  border-left: 1px solid var(--line);
+  padding: 0 16px;
   font-size: 13px;
 }
 
@@ -58,10 +57,6 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.items)
   gap: 12px;
   height: 60px;
   border-top: 1px solid var(--line);
-}
-
-.row:last-child {
-  border-bottom: 1px solid var(--line);
 }
 
 /* header: plain small text, the hairline under it does the separating */

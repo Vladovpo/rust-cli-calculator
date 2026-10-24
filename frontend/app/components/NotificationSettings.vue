@@ -10,7 +10,8 @@ const loadError = ref('')
 
 const form = reactive({
   email: '',
-  enabled: true,
+  // off until there is an email to send to
+  enabled: false,
   days: '3',
   time: '09:00',
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Moscow',
@@ -18,7 +19,7 @@ const form = reactive({
 
 function fill(settings: UserNotificationSettings) {
   form.email = settings.email ?? ''
-  form.enabled = settings.email_enabled ?? true
+  form.enabled = (settings.email_enabled ?? true) && !!form.email
   form.days = String(settings.days_before_due ?? 3)
   form.time = settings.send_time ?? '09:00'
   form.timezone = settings.timezone || form.timezone
@@ -37,6 +38,14 @@ async function load() {
 }
 
 onMounted(load)
+
+// letters need an address: without one the switch is off and can't be turned on.
+// on the first setup typing an email turns it on
+const hasEmail = computed(() => /^\S+@\S+\.\S+$/.test(form.email.trim()))
+watch(hasEmail, (valid) => {
+  if (!valid) form.enabled = false
+  else if (!saved.value) form.enabled = true
+})
 
 // what sits on the right of each row: a switch, the wide email field, two short fields
 const skeletonControls = ['switch', 'wide', 'short-1', 'short-2']
@@ -94,9 +103,9 @@ async function save() {
       <div class="row">
         <div>
           <p>Присылать письма</p>
-          <p class="hint">О платежах, за которые вы отвечаете</p>
+          <p class="hint">{{ hasEmail ? 'О платежах, за которые вы отвечаете' : 'Сначала укажите почту' }}</p>
         </div>
-        <UiSwitch v-model="form.enabled" aria-label="Присылать письма" />
+        <UiSwitch v-model="form.enabled" :disabled="!hasEmail" aria-label="Присылать письма" />
       </div>
 
       <div class="row">
