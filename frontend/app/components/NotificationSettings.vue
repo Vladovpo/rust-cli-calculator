@@ -54,6 +54,56 @@ const busy = ref(false)
 const error = ref('')
 const done = ref(false)
 
+// confirming the address: the server mails a code, the person types it here.
+// only for the saved address, a new one in the field has to be saved first
+const needsConfirm = computed(() => !!saved.value?.email && !saved.value.email_verified)
+const changedEmail = computed(() => form.email.trim() !== (saved.value?.email ?? ''))
+const codeSent = ref(false)
+const code = ref('')
+const confirmBusy = ref(false)
+const confirmError = ref('')
+
+async function sendCode() {
+  confirmBusy.value = true
+  confirmError.value = ''
+  try {
+    await api.notifications.sendCode()
+    codeSent.value = true
+    code.value = ''
+    nextTick(() => document.querySelector<HTMLInputElement>('.code input')?.focus())
+  }
+  catch (e) {
+    confirmError.value = apiError(e)
+  }
+  finally {
+    confirmBusy.value = false
+  }
+}
+
+async function verify() {
+  if (code.value.length !== 6 || confirmBusy.value) return
+  confirmBusy.value = true
+  confirmError.value = ''
+  try {
+    await api.notifications.verify(code.value)
+    codeSent.value = false
+    await load()
+  }
+  catch (e) {
+    confirmError.value = apiError(e)
+    // a wrong code: the field is cleared and ready for the next try
+    code.value = ''
+    nextTick(() => document.querySelector<HTMLInputElement>('.code input')?.focus())
+  }
+  finally {
+    confirmBusy.value = false
+  }
+}
+
+// all six digits typed: check right away, no need to press the button
+watch(code, value => value.length === 6 && verify())
+const digitsOnly = (text: string) => text.replace(/\D/g, '').slice(0, 6)
+
 async function save() {
   const days = Number(form.days)
   if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) error.value = 'Введите почту'
@@ -68,6 +118,7 @@ async function save() {
       if (saved.value) await api.notifications.replace(body)
       else await api.notifications.create(body)
       await load()
+      codeSent.value = false
       done.value = true
       setTimeout(() => (done.value = false), 2500)
     }
@@ -103,7 +154,7 @@ async function save() {
       <div class="row">
         <div>
           <p>Присылать письма</p>
-          <p class="hint">{{ hasEmail ? 'О платежах, за которые вы отвечаете' : 'Сначала укажите почту' }}</p>
+          <p class="hint">{{ !hasEmail ? 'Сначала укажите почту' : needsConfirm && form.enabled ? 'Начнут приходить, когда вы подтвердите почту' : 'О платежах, за которые вы отвечаете' }}</p>
         </div>
         <UiSwitch v-model="form.enabled" :disabled="!hasEmail" aria-label="Присылать письма" />
       </div>
@@ -117,6 +168,41 @@ async function save() {
           <p v-else class="hint">Смена почты снимает подтверждение</p>
         </div>
         <span class="field wide"><UiInput v-model="form.email" type="email" placeholder="name@company.ru" autocomplete="email" aria-label="Почта" /></span>
+      </div>
+
+      <!-- letters only go to a confirmed address -->
+      <div v-if="needsConfirm" class="row confirm">
+        <div>
+          <p>Подтвердите почту</p>
+          <p v-if="confirmError" class="hint error-text">{{ confirmError }}</p>
+          <p v-else-if="changedEmail" class="hint">Сначала сохраните новую почту</p>
+          <p v-else-if="codeSent" class="hint">Код отправлен на {{ saved?.email }}</p>
+          <p v-else class="hint">Письма приходят только на подтверждённую почту</p>
+        </div>
+        <span class="actions">
+          <template v-if="codeSent && !changedEmail">
+            <button type="button" class="again" :disabled="confirmBusy" @click="sendCode">Ещё раз</button>
+            <span class="field code">
+              <UiInput
+                v-model="code"
+                :filter="digitsOnly"
+                mono
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="000000"
+                maxlength="6"
+                aria-label="Код из письма"
+                @keydown.enter="verify"
+              />
+            </span>
+            <UiButton size="md" variant="primary" :disabled="confirmBusy || code.length !== 6" @click="verify">
+              {{ confirmBusy ? 'Проверяем…' : 'Подтвердить' }}
+            </UiButton>
+          </template>
+          <UiButton v-else size="md" :disabled="confirmBusy || changedEmail" @click="sendCode">
+            {{ confirmBusy ? 'Отправляем…' : 'Отправить код' }}
+          </UiButton>
+        </span>
       </div>
 
       <div class="row">
@@ -175,6 +261,32 @@ async function save() {
   width: 320px;
 }
 
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+/* six digits, spaced a little so they read like a code */
+.code :deep(input) {
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+
+.again {
+  padding: 0;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-ink);
+}
+
+.again:disabled {
+  opacity: 0.5;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -189,6 +301,10 @@ async function save() {
 
 .ok {
   color: var(--green);
+}
+
+.hint.error-text {
+  color: var(--red);
 }
 
 .off {

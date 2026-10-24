@@ -103,6 +103,9 @@ export function useApi() {
       replace: (body: UpdateUserNotificationSettingsRequest) => api('/notifications/settings', { method: 'PUT', body }),
       patch: (body: PatchUserNotificationSettingsRequest) => api('/notifications/settings', { method: 'PATCH', body }),
       remove: () => api('/notifications/settings', { method: 'DELETE' }),
+      // a code to the saved address, then the code back: the address is confirmed
+      sendCode: () => api('/notifications/email/code', { method: 'POST' }),
+      verify: (code: string) => api('/notifications/email/verify', { method: 'POST', body: { code } }),
     },
 
     // receipts of a payment period: files and links. the assignee and the admin can see and change them

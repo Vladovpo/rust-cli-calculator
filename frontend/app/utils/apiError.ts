@@ -148,6 +148,12 @@ const byMessage: Record<string, string> = {
   'notification settings already exist': 'Напоминания уже настроены',
   'notification settings not found': 'Напоминания ещё не настроены',
   'user notification settings not found': 'Напоминания ещё не настроены',
+  'notification settings not found: save the email first': 'Сначала сохраните почту',
+  'email already verified': 'Почта уже подтверждена',
+  'invalid verification code': 'Неверный код',
+  'verification code expired or not requested': 'Код устарел, запросите новый',
+  'too many wrong codes, request a new one': 'Слишком много неверных кодов, запросите новый',
+  'verification code was sent recently': 'Код уже отправлен, новый можно запросить чуть позже',
 
   // telegram
   'telegram bot is disabled': 'Бот сейчас выключен',
@@ -182,6 +188,8 @@ function fromMessage(message: string): string | undefined {
   if (byMessage[reason]) return byMessage[reason]
   // the mail server is not set up on the backend
   if (text.startsWith('smtp is not configured')) return 'Почта на сервере не настроена'
+  // the mail server didn't take the letter, its own words follow after the colon
+  if (text.startsWith('failed to send email')) return 'Не получилось отправить письмо, проверьте адрес'
   return undefined
 }
 
