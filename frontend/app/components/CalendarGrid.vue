@@ -27,87 +27,65 @@ const weeks = computed(() => {
   return Math.ceil((shift + days) / 7)
 })
 
-// how many payment lines fit in a cell: the cell's height minus its padding and the day number,
-// every line is 22px with a 4px gap. the grid stretches with the screen, so this is measured
-const grid = ref<HTMLElement>()
-const cellHeight = ref(124)
-const capacity = computed(() => Math.max(1, Math.floor((cellHeight.value - 42 + 4) / 26)))
+// every payment of the day is shown, they shrink to fit the cell (rows are 124px).
+// first one column of pills, a bit lower when there are more of them; when that gets too
+// small to read, they go into a grid of 2, then 3 columns
+const area = 80
+const minHeight = 16
 
-let observer: ResizeObserver | undefined
-onMounted(() => {
-  observer = new ResizeObserver(() => {
-    cellHeight.value = grid.value?.querySelector<HTMLElement>('.cell')?.offsetHeight ?? 124
-  })
-  if (grid.value) observer.observe(grid.value)
-})
-onBeforeUnmount(() => observer?.disconnect())
-
-// a payment is one 22px line. a long name may wrap to more lines if the cell has room for it,
-// this is the most height one payment can take (up to 54px, three lines)
-const lineHeight = 22
-const maxHeight = 54
-
-function chipHeight(shown: number, more: number) {
-  if (!shown) return lineHeight
-  const rows = shown + more
-  const free = cellHeight.value - 42 - (rows - 1) * 4 - more * lineHeight
-  return Math.min(maxHeight, Math.max(lineHeight, Math.floor(free / shown)))
+function layout(count: number) {
+  for (const cols of [1, 2, 3]) {
+    const rows = Math.ceil(count / cols)
+    const gap = rows * 22 + (rows - 1) * 4 <= area ? 4 : 2
+    const height = Math.min(22, Math.floor((area - (rows - 1) * gap) / rows))
+    // past 3 columns the row of the calendar grows instead
+    if (height >= minHeight || cols === 3) return { cols, gap, height: Math.max(height, minHeight) }
+  }
+  return { cols: 3, gap: 2, height: minHeight }
 }
 
 const cells = computed(() => monthCells(props.year, props.month, weeks.value).map((cell) => {
   const onDay = cell.inMonth ? props.periods.filter(p => fromRu(p.due) === cell.iso) : []
-  const fit = onDay.length > capacity.value ? capacity.value - 1 : capacity.value
-  const height = chipHeight(Math.min(fit, onDay.length), onDay.length > fit ? 1 : 0)
   return {
     ...cell,
-    lines: Math.max(1, Math.floor((height - 6) / 16)),
     key: cell.iso,
     day: String(cell.day).padStart(2, '0'),
     today: cell.inMonth && cell.day === props.today,
-    // as many names as fit, the rest of the day is one "ещё N" line (which takes a line too)
-    shown: onDay.slice(0, fit),
-    hidden: onDay.slice(fit),
+    payments: onDay,
+    layout: layout(onDay.length),
   }
 }))
 </script>
 
 <template>
-  <div ref="grid" class="grid" :style="{ '--weeks': weeks }">
+  <div class="grid" :style="{ '--weeks': weeks }">
     <span v-for="name in weekdays" :key="name" class="weekday" :class="{ off: name === 'Сб' || name === 'Вс' }">
       {{ name }}
     </span>
 
-    <div
-      v-for="cell in cells"
-      :key="cell.key"
-      class="cell"
-      :class="{ weekend: cell.weekend }"
-      :style="{ '--lines': cell.lines }"
-    >
+    <div v-for="cell in cells" :key="cell.key" class="cell" :class="{ weekend: cell.weekend }">
       <span v-if="cell.today" class="today"><span class="circle">{{ cell.day }}</span>сегодня</span>
       <span v-else class="day mono" :class="{ other: !cell.inMonth }">{{ cell.day }}</span>
 
       <!-- only the name here, amount and the rest are in the side panel -->
-      <button
-        v-for="period in cell.shown"
-        :key="period.id"
-        type="button"
-        class="payment"
-        :class="[period.status, { selected: selected?.id === period.id }]"
-        :title="`${period.title} · ${period.amount}`"
-        @click="select(period)"
+      <div
+        v-if="cell.payments.length"
+        class="payments"
+        :class="{ small: cell.layout.height < 22 || cell.layout.cols > 1, grid2: cell.layout.cols === 2, grid3: cell.layout.cols === 3 }"
+        :style="{ '--cols': cell.layout.cols, '--gap': `${cell.layout.gap}px`, '--chip-h': `${cell.layout.height}px` }"
       >
-        <span class="dot" /><span class="name">{{ period.title }}</span>
-      </button>
-      <button
-        v-if="cell.hidden.length"
-        type="button"
-        class="more"
-        :title="cell.hidden.map(period => period.title).join(', ')"
-        @click="select(cell.hidden[0]!)"
-      >
-        ещё {{ cell.hidden.length }}
-      </button>
+        <button
+          v-for="period in cell.payments"
+          :key="period.id"
+          type="button"
+          class="payment"
+          :class="[period.status, { selected: selected?.id === period.id }]"
+          :title="`${period.title} · ${period.amount}`"
+          @click="select(period)"
+        >
+          <span class="dot" /><span class="name">{{ period.title }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -116,9 +94,8 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  /* fills the screen under the toolbar, never lower than the old fixed size */
-  grid-template-rows: 30px repeat(var(--weeks), minmax(124px, 1fr));
-  min-height: calc(100vh - 190px);
+  /* a very busy day (more than three columns of payments) makes its row taller */
+  grid-template-rows: 30px repeat(var(--weeks), minmax(124px, auto));
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
@@ -194,13 +171,19 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
   text-align: center;
 }
 
-.payment,
-.more {
+.payments {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-auto-rows: var(--chip-h);
+  gap: var(--gap);
+}
+
+.payment {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
-  height: 22px;
+  min-width: 0;
+  height: var(--chip-h);
   padding: 0 8px;
   border: 1px solid transparent;
   border-radius: 9999px;
@@ -211,31 +194,37 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
   transition: border-color 0.2s ease, transform 0.35s var(--ease-out), filter 0.2s ease;
 }
 
+/* lower pills or a grid of them: a smaller font and less padding so the names still read */
+.small .payment {
+  gap: 4px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+
+/* in a grid the pill's colour already tells the status, the dot only takes room */
+.grid2 .dot,
+.grid3 .dot {
+  display: none;
+}
+
+/* three columns are too narrow for a name: just the coloured tiles, the name is in the tooltip */
+.grid3 .payment {
+  padding: 0;
+}
+
+.grid3 .name {
+  display: none;
+}
+
 .payment:hover {
   transform: translateX(2px);
   filter: brightness(1.08);
 }
 
-/* as tall as its text: one line is the usual pill, a wrapped name gets a bit taller */
-.payment {
-  height: auto;
-  min-height: 22px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  border-radius: 11px;
-}
-
-/* the name wraps to as many lines as fit, the last one ends with … */
 .name {
-  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
-  line-height: 16px;
-  white-space: normal;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--lines, 1);
+  text-overflow: ellipsis;
 }
 
 .dot {
@@ -255,15 +244,5 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 
 .payment.selected {
   border-color: currentColor;
-}
-
-.more {
-  background: none;
-  color: var(--ink-3);
-  font-weight: 400;
-}
-
-.more:hover {
-  color: var(--ink);
 }
 </style>
