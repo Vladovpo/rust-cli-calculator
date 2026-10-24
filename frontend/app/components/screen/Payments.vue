@@ -32,12 +32,16 @@ const count = (s: string) => filtered.value.filter(period => s === 'paid'
   ? period.status === 'paid' || period.status === 'late'
   : period.status === s).length
 
-const statusOptions = computed(() => [
-  { value: 'all', label: 'Все', count: filtered.value.length },
-  { value: 'pending', label: 'Не оплачено', count: count('pending') + count('overdue') },
-  { value: 'paid', label: 'Оплачено', count: count('paid') },
-  { value: 'overdue', label: 'Просрочено', count: count('overdue'), danger: count('overdue') > 0 },
-])
+// no counts until the payments arrive, a row of zeros would look like there is nothing
+const statusOptions = computed(() => {
+  const loaded = payments.ready.value
+  return [
+    { value: 'all', label: 'Все', count: loaded ? filtered.value.length : undefined },
+    { value: 'pending', label: 'Не оплачено', count: loaded ? count('pending') + count('overdue') : undefined },
+    { value: 'paid', label: 'Оплачено', count: loaded ? count('paid') : undefined },
+    { value: 'overdue', label: 'Просрочено', count: loaded ? count('overdue') : undefined, danger: loaded && count('overdue') > 0 },
+  ]
+})
 
 const shown = computed(() => {
   if (status.value === 'all') return filtered.value
@@ -88,7 +92,9 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
     <UiState v-if="payments.loadError.value" kind="error" class="load-error" @retry="payments.load">
       Не удалось загрузить платежи: {{ payments.loadError.value }}
     </UiState>
+    <!-- after a failed load the table would say «no payments», which isn't true -->
     <PaymentsTable
+      v-if="!payments.loadError.value"
       :periods="shown"
       :totals="shownTotals"
       :filtered="isFiltered"

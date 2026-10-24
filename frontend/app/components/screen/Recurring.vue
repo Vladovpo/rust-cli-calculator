@@ -30,10 +30,10 @@ function stop(template: Template) {
     </AppPageHeader>
 
     <div class="tools">
-      <UiSwitch v-model="showStopped">Показать прекращённые <span class="mono muted">{{ stoppedCount }}</span></UiSwitch>
+      <UiSwitch v-model="showStopped">Показать прекращённые <span v-if="payments.ready.value" class="mono muted">{{ stoppedCount }}</span></UiSwitch>
     </div>
 
-    <UiState v-if="payments.pending.value" class="state">Загружаем платежи…</UiState>
+    <RecurringTable v-if="payments.pending.value" :templates="[]" loading />
     <UiState v-else-if="payments.loadError.value" kind="error" class="state" @retry="payments.load">
       Не удалось загрузить: {{ payments.loadError.value }}
     </UiState>

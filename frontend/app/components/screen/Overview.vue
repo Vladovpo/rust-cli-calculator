@@ -77,6 +77,7 @@ function mark(period: Period) {
         class="rise"
         :total="total"
         :label="`К оплате по ${toRu(asOf)}¹`"
+        :loading="!payments.ready.value"
         :style="{ viewTransitionName: `card-${total.code}`, '--i': i }"
       />
     </div>
@@ -93,7 +94,7 @@ function mark(period: Period) {
       </template>
     </AppSectionTitle>
 
-    <UiState v-if="payments.pending.value" class="upcoming-state">Загружаем платежи…</UiState>
+    <UpcomingList v-if="payments.pending.value" :items="[]" loading />
     <UiState v-else-if="payments.loadError.value" kind="error" class="upcoming-state" @retry="payments.load">
       Не удалось загрузить платежи: {{ payments.loadError.value }}
     </UiState>

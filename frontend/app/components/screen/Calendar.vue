@@ -64,7 +64,8 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
 
     <div class="toolbar">
       <UiMonthPicker v-model="monthModel" variant="title" :current="thisMonth" />
-      <UiButton class="today" @click="goToday">Сегодня</UiButton>
+      <!-- back to the current month -->
+      <UiButton class="today" aria-label="Сегодня" title="К сегодняшнему месяцу" @click="goToday"><UiIcon name="reset" :size="15" /></UiButton>
       <span class="legend">
         <UiStatus status="pending" label="ожидает" />
         <UiStatus status="paid" label="оплачено" />
@@ -93,7 +94,7 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
           @mark="mark(selected)"
           @pick="period => (selected = period)"
         />
-        <MonthTotals :title="`Итоги ${monthNamesGenitive[shown.month]}`" :totals="monthTotals" />
+        <MonthTotals :title="`Итоги ${monthNamesGenitive[shown.month]}`" :totals="monthTotals" :loading="!payments.ready.value" />
         <div v-if="overdueNow.length" class="note">
           <UiStatus status="overdue" :label="`${overdueNow.length} просрочен${overdueNow.length > 1 ? 'о' : ''}`" />
         </div>
@@ -111,9 +112,16 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
 }
 
 .today {
+  display: grid;
+  place-items: center;
   height: 32px;
-  width: 84px;
+  width: 32px;
   padding: 0;
+  color: var(--ink-2);
+}
+
+.today:hover {
+  color: var(--ink);
 }
 
 .legend {

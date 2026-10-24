@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Template } from '~/utils/periods'
 
-const props = defineProps<{ templates: Template[] }>()
+const props = defineProps<{ templates: Template[], loading?: boolean }>()
 const emit = defineEmits<{ stop: [template: Template] }>()
 
 // a filter per column, '' = off. they will go to the server as query params,
@@ -40,6 +40,21 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
       <span>Статус</span>
       <span v-if="isAdmin" />
     </div>
+
+    <!-- grey rows of the same size until the payments arrive -->
+    <template v-if="loading">
+      <div v-for="n in 4" :key="`s${n}`" class="row">
+        <span />
+        <span class="stack"><UiSkeleton width="150px" /><UiSkeleton width="90px" height="10px" /></span>
+        <UiSkeleton width="90px" class="end" />
+        <UiSkeleton width="30px" height="10px" class="currency-skeleton" />
+        <span class="stack"><UiSkeleton width="90px" /><UiSkeleton width="60px" height="10px" /></span>
+        <UiSkeleton width="110px" />
+        <UiSkeleton width="80px" />
+        <UiSkeleton width="70px" height="20px" />
+        <span v-if="isAdmin" />
+      </div>
+    </template>
 
     <div v-for="(item, i) in visible" :key="item.id" class="row rise" :class="{ ended: item.ended }" :style="{ '--i': i }">
       <span class="mono muted small">{{ String(i + 1).padStart(2, '0') }}</span>
@@ -140,6 +155,20 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
 .ended .title,
 .ended .dim {
   color: var(--ink-3);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.end {
+  justify-self: end;
+}
+
+.currency-skeleton {
+  margin-left: 20px;
 }
 
 .sentinel {

@@ -36,7 +36,10 @@ export function usePayments() {
   const today = computed(() => todayIso())
   const periods = computed(() => live.value.periods)
   const templates = computed(() => live.value.templates)
-  const pending = computed(() => !loaded.value)
+  // a failed first load is not «loading» any more: the screens show the error instead
+  const pending = computed(() => !loaded.value && !loadError.value)
+  // numbers (totals, counts) are only real once a load went through, until then they stay grey
+  const ready = computed(() => loaded.value)
 
   // the person logged in
   const meName = computed(() => user.value?.full_name ?? '')
@@ -138,7 +141,7 @@ export function usePayments() {
   }
 
   return {
-    today, periods, templates, assignees, meName, pending, loading, loadError, actionError, loadedAt,
+    today, periods, templates, assignees, meName, pending, ready, loading, loadError, actionError, loadedAt,
     canMark, load, markPaid, unmark, stop, add,
   }
 }

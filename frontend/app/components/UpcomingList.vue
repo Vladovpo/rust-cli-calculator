@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Period } from '~/utils/periods'
 
-const props = defineProps<{ items: Period[], canMark?: (period: Period) => boolean }>()
+const props = defineProps<{ items: Period[], canMark?: (period: Period) => boolean, loading?: boolean }>()
 
 const shortMonths = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 const monthOf = (due: string) => shortMonths[Number(due.slice(3, 5)) - 1] ?? ''
@@ -12,6 +12,19 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.items)
 
 <template>
   <ul class="list">
+    <!-- grey rows of the same size until the payments arrive -->
+    <template v-if="loading">
+      <li v-for="n in 3" :key="`s${n}`" class="row">
+        <UiSkeleton width="38px" height="38px" />
+        <UiSkeleton width="60px" height="10px" class="pad" />
+        <span class="stack"><UiSkeleton width="150px" /><UiSkeleton width="100px" height="10px" /></span>
+        <UiSkeleton width="100px" />
+        <UiSkeleton width="90px" />
+        <UiSkeleton width="30px" height="10px" />
+        <UiSkeleton width="80px" height="20px" />
+        <span />
+      </li>
+    </template>
     <li v-for="(item, i) in visible" :key="item.id" class="row rise" :style="{ '--i': i }">
       <UiDateTile :month="monthOf(item.due)" :day="item.due.slice(0, 2)" />
       <span class="relative" :class="{ near: item.relative === 'завтра' }">{{ item.relative }}</span>
@@ -35,6 +48,16 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.items)
 </template>
 
 <style scoped>
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pad {
+  margin-left: 12px;
+}
+
 .sentinel {
   height: 1px;
 }
