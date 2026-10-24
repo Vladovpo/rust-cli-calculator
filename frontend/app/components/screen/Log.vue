@@ -106,6 +106,49 @@ watch(sentinel, (el) => {
 }, { flush: 'post' })
 onBeforeUnmount(() => observer?.disconnect())
 
+// new entries show up on their own: every few seconds we ask for the newest page
+// and put whatever is new on top. nothing is asked while the tab is hidden
+const fresh = ref(new Set<number | undefined>())
+let polling = false
+async function poll() {
+  if (polling || loading.value || error.value || document.hidden) return
+  const mine = latest
+  polling = true
+  try {
+    const page = await fetchPage(0)
+    if (mine !== latest) return
+    const newest = page.items ?? []
+    const known = new Set(items.value.map(item => item.id))
+    const added = newest.filter(item => !known.has(item.id))
+    if (!added.length) return
+    // a whole page of new ones: the gap can't be stitched, start from the top
+    if (added.length === newest.length && items.value.length) items.value = newest
+    else items.value = [...added, ...items.value]
+    total.value = page.total ?? total.value
+    // new rows light up for a moment
+    added.forEach(item => fresh.value.add(item.id))
+    setTimeout(() => added.forEach(item => fresh.value.delete(item.id)), 2400)
+  }
+  catch {
+    // a missed round is fine, the next one tries again
+  }
+  finally {
+    polling = false
+  }
+}
+
+let ticker: ReturnType<typeof setInterval> | undefined
+// back to the tab: check right away instead of waiting for the next round
+const onVisible = () => !document.hidden && poll()
+onMounted(() => {
+  ticker = setInterval(poll, 8000)
+  document.addEventListener('visibilitychange', onVisible)
+})
+onBeforeUnmount(() => {
+  clearInterval(ticker)
+  document.removeEventListener('visibilitychange', onVisible)
+})
+
 function reset() {
   Object.assign(filters, { from: '', to: '', actor: '', action: '', entity: '', channel: '', outcome: '', q: '' })
 }
@@ -162,8 +205,8 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
 
       <template v-else>
         <template v-for="(item, i) in items" :key="item.id">
-          <div class="row entry rise" :class="{ opened: open === item.id }" :style="{ '--i': i % PAGE }" @click="toggle(item)">
-            <span class="mono soft">{{ when(item.created_at) }}</span>
+          <div class="row entry rise" :class="{ opened: open === item.id, fresh: fresh.has(item.id) }" :style="{ '--i': i % PAGE }" @click="toggle(item)">
+            <span class="mono soft nowrap">{{ when(item.created_at) }}</span>
             <span v-if="!mine">
               <span class="name">{{ actorName(item) }}</span>
               <span v-if="item.actor?.role" class="small muted">{{ roleName(item.actor.role) }}</span>
@@ -224,6 +267,17 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
 </template>
 
 <style scoped>
+/* a row that just arrived: comes up like the others and has a soft accent tint that fades out */
+.row.fresh {
+  animation: rise 0.6s var(--ease-out) backwards, fresh 2.4s var(--ease-out);
+}
+
+@keyframes fresh {
+  from {
+    background: var(--accent-bg);
+  }
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -242,7 +296,7 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
   display: grid;
   /* every column has its least width and a share of what's left */
   grid-template-columns:
-    minmax(120px, 1fr) minmax(140px, 1.3fr) minmax(170px, 1.6fr) minmax(120px, 1.2fr)
+    minmax(136px, 1fr) minmax(140px, 1.3fr) minmax(170px, 1.6fr) minmax(120px, 1.2fr)
     minmax(0, 2.2fr) minmax(84px, 0.8fr) minmax(90px, 0.8fr);
   align-items: center;
   column-gap: 12px;
@@ -253,7 +307,7 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
 
 .mine .row {
   grid-template-columns:
-    minmax(120px, 1fr) minmax(170px, 1.6fr) minmax(120px, 1.2fr)
+    minmax(136px, 1fr) minmax(170px, 1.6fr) minmax(120px, 1.2fr)
     minmax(0, 2.2fr) minmax(84px, 0.8fr) minmax(90px, 0.8fr);
 }
 
@@ -297,6 +351,10 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
   align-items: baseline;
   gap: 8px;
   min-width: 0;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .ellipsis {

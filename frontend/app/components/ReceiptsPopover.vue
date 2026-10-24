@@ -28,16 +28,6 @@ useClickOutside(() => root.value?.parentElement, () => emit('close'))
 const busy = ref(false)
 const error = ref('')
 
-// what the server's answers mean here, in words
-function receiptError(e: unknown) {
-  const status = (e as { statusCode?: number }).statusCode
-  if (status === 409) return 'У этого платежа уже максимум чеков'
-  if (status === 413) return 'Файл слишком большой'
-  if (status === 415) return 'Такой файл не подходит: нужен PDF, картинка, TXT, CSV или документ Office'
-  if (status === 400) return 'Не получилось: проверьте файл или ссылку'
-  return apiError(e)
-}
-
 async function run(action: () => Promise<unknown>) {
   busy.value = true
   error.value = ''
@@ -45,7 +35,7 @@ async function run(action: () => Promise<unknown>) {
     await action()
   }
   catch (e) {
-    error.value = receiptError(e)
+    error.value = apiError(e)
   }
   finally {
     busy.value = false

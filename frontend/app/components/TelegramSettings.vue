@@ -24,14 +24,6 @@ async function load() {
 
 onMounted(load)
 
-// the server's own text for these would show limits, so we say it in our words
-function telegramError(e: unknown) {
-  const status = (e as { statusCode?: number }).statusCode
-  if (status === 429) return 'Слишком много попыток, попробуйте позже'
-  if (status === 503) return 'Бот сейчас выключен'
-  return apiError(e)
-}
-
 // one-time link to the bot. the user opens it, confirms in telegram and comes back here
 const deepLink = ref('')
 const linkUntil = ref('')
@@ -48,7 +40,7 @@ async function getLink() {
     linkUntil.value = res.expires_in ? until.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''
   }
   catch (e) {
-    error.value = telegramError(e)
+    error.value = apiError(e)
   }
   finally {
     busy.value = false
@@ -116,8 +108,7 @@ async function sendTest() {
     setTimeout(() => (testState.value = 'idle'), 2500)
   }
   catch (e) {
-    const status = (e as { statusCode?: number }).statusCode
-    testError.value = status === 409 ? 'Командный чат не привязан' : status === 502 ? 'Telegram не принял сообщение' : apiError(e)
+    testError.value = apiError(e)
     testState.value = 'idle'
   }
 }

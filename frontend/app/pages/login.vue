@@ -13,11 +13,7 @@ async function submit() {
     await navigateTo(home.value)
   }
   catch (e) {
-    const status = (e as { statusCode?: number }).statusCode
-    if (status === 401) error.value = 'Неверный логин или пароль'
-    // the server limits how often you can try to log in
-    else if (status === 429) error.value = 'Слишком много попыток входа. Попробуйте позже.'
-    else error.value = apiError(e)
+    error.value = apiError(e)
   }
   finally {
     busy.value = false
