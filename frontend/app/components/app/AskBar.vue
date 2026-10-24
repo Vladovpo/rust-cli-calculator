@@ -221,6 +221,7 @@ onBeforeUnmount(() => {
 .ask:focus-within {
   border-color: var(--ink-2);
   box-shadow: 0 0 0 3px var(--subtle);
+  animation: focus-ring 0.45s var(--ease-out);
 }
 
 .search {

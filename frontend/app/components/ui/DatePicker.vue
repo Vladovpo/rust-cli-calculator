@@ -144,12 +144,18 @@ useClickOutside(root, () => { open.value = false }, open)
   text-align: left;
   outline: none;
   user-select: none;
+  transition: border-color 0.2s ease, box-shadow 0.35s var(--ease-out);
+}
+
+.input:hover:not(:focus, .open) {
+  border-color: var(--ink-3);
 }
 
 .input:focus,
 .input.open {
   border-color: var(--ink-2);
   box-shadow: 0 0 0 3px var(--subtle);
+  animation: focus-ring 0.45s var(--ease-out);
 }
 
 .caret {

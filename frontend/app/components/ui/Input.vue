@@ -77,6 +77,11 @@ function onBlur() {
   border-radius: 9999px;
   font-size: 14px;
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.35s var(--ease-out);
+}
+
+.input:hover:not(:focus) {
+  border-color: var(--ink-3);
 }
 
 .input.has-eye {
@@ -86,7 +91,9 @@ function onBlur() {
 .input:focus {
   border-color: var(--ink-2);
   box-shadow: 0 0 0 3px var(--subtle);
+  animation: focus-ring 0.45s var(--ease-out);
 }
+
 
 .input::placeholder {
   color: var(--ink-3);

@@ -30,8 +30,8 @@ const typed = ref(caption.length)
 const typing = ref(false)
 // a new key replays the stamp landing
 const stampKey = ref(0)
-// every time the stamp lands it's at a new angle, up to 35° either way, like stamped by hand
-const randomTilt = () => Math.round((Math.random() * 2 - 1) * 35)
+// every time the stamp lands it's at a new angle, up to 25° either way, like stamped by hand
+const randomTilt = () => Math.round((Math.random() * 2 - 1) * 25)
 const tilt = ref(randomTilt())
 watch(stampKey, () => { tilt.value = randomTilt() })
 

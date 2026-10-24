@@ -219,6 +219,18 @@ p {
     filter: blur(4px);
 }
 
+/* a field gets picked (focus, an opened picker): a soft ring swells out a little and settles.
+   used by UiInput, UiDatePicker, UiDropdown and the ask bar */
+@keyframes focus-ring {
+    from {
+        box-shadow: 0 0 0 0 var(--line-strong);
+    }
+
+    45% {
+        box-shadow: 0 0 0 6px var(--subtle);
+    }
+}
+
 .rise {
     /* backwards: nothing lingers on the element once it has landed */
     animation: rise 0.6s var(--ease-out) backwards;
