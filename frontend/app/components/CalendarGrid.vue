@@ -38,9 +38,15 @@ function layout(count: number) {
   while (cols < 4 && (area - (Math.ceil(count / cols) - 1) * gap) / Math.ceil(count / cols) < 16) cols++
   const rows = Math.ceil(count / cols)
   const height = (area - (rows - 1) * gap) / rows
-  // a tall stripe lets a long name wrap, 15px per line
-  return { cols, rows, lines: Math.max(1, Math.floor((height - 6) / 15)), small: height < 22 || cols > 1 }
+  // a tall stripe lets a long name wrap, 15px per line. with two lines or more
+  // the last one is the amount under the name
+  const lines = Math.max(1, Math.floor((height - 6) / 15))
+  const amount = cols === 1 && lines > 1
+  return { cols, rows, lines: amount ? lines - 1 : lines, amount, small: height < 22 || cols > 1 }
 }
+
+// "120 000,00 ₽" -> "120 000 ₽", a cell is narrow
+const shortAmount = (amount: string) => amount.replace(/,00(?=\s)/, '')
 
 const cells = computed(() => monthCells(props.year, props.month, weeks.value).map((cell) => {
   const onDay = cell.inMonth ? props.periods.filter(p => fromRu(p.due) === cell.iso) : []
@@ -81,7 +87,11 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
           :title="`${period.title} · ${period.amount}`"
           @click="select(period)"
         >
-          <span class="dot" /><span class="name">{{ period.title }}</span>
+          <span class="dot" />
+          <span class="text">
+            <span class="name">{{ period.title }}</span>
+            <span v-if="cell.layout.amount" class="amount mono">{{ shortAmount(period.amount) }}</span>
+          </span>
         </button>
       </div>
     </div>
@@ -199,6 +209,21 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 }
 
 /* the name wraps if the stripe is tall enough, the last line ends with … */
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.amount {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .name {
   display: -webkit-box;
   min-width: 0;
