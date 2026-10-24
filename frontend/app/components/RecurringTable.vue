@@ -71,7 +71,13 @@ const { visible, hasMore, sentinel } = useLazyList(sorted)
       </div>
     </template>
 
-    <div v-for="(item, i) in visible" :key="item.id" class="row rise" :class="{ ended: item.ended }" :style="{ '--i': i }">
+    <div
+      v-for="(item, i) in visible"
+      :key="item.id"
+      class="row rise"
+      :class="{ ended: item.ended }"
+      :style="{ viewTransitionName: `template-${item.id}`, '--i': i }"
+    >
       <span class="mono muted small">{{ String(i + 1).padStart(2, '0') }}</span>
       <span>
         <span class="title">{{ item.title }}</span>

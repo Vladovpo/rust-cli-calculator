@@ -1,7 +1,9 @@
 // runs a server search whenever its parameters change. it waits a moment after the last change
 // (so typing doesn't fire a request per letter) and keeps only the newest answer.
 // params() returns null when there is nothing to search for: then the result is cleared
+// the new rows come in through a view transition: rows with a view-transition-name slide to their place
 export function useServerSearch<P, R>(params: () => P | null, run: (params: P) => Promise<R>) {
+  const { withTransition } = useViewTransition()
   const result = shallowRef<R>()
   const searching = ref(false)
   const error = ref('')
@@ -15,7 +17,7 @@ export function useServerSearch<P, R>(params: () => P | null, run: (params: P) =
     error.value = ''
     try {
       const answer = await run(current)
-      if (mine === latest) result.value = answer
+      if (mine === latest) withTransition(() => { result.value = answer })
     }
     catch (e) {
       if (mine === latest) error.value = apiError(e)
@@ -30,7 +32,8 @@ export function useServerSearch<P, R>(params: () => P | null, run: (params: P) =
     const current = params()
     if (!current) {
       latest++
-      result.value = undefined
+      // back to the full list, the same slide
+      if (result.value !== undefined) withTransition(() => { result.value = undefined })
       searching.value = false
       error.value = ''
       return

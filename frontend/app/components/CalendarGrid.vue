@@ -223,11 +223,20 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
   font-weight: 500;
   line-height: 15px;
   text-align: left;
-  transition: border-color 0.2s ease, filter 0.2s ease;
+  transition: border-color 0.2s ease, filter 0.2s ease, transform 0.35s var(--ease-spring), box-shadow 0.35s var(--ease-out);
 }
 
+/* lifts off the paper a little, with a soft shadow in its own colour */
 .payment:hover {
   filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -8px currentColor;
+}
+
+.payment:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
+  transition-duration: 0.1s;
 }
 
 /* the name wraps if the stripe is tall enough, the last line ends with … */

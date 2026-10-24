@@ -191,6 +191,14 @@ function reset() {
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+  animation: dot-in 0.4s var(--ease-spring);
+}
+
+/* the filter just got set: the dot pops in */
+@keyframes dot-in {
+  from {
+    transform: scale(0);
+  }
 }
 
 .menu {

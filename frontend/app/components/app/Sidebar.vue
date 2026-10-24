@@ -22,11 +22,14 @@ const adminNav: NavItem[] = [
 // one highlight slides from the old page's item to the new one, across both sections
 const root = ref<HTMLElement>()
 const marker = ref<{ top: number, height: number }>()
+// no nav item is active (e.g. on «Настройки»): the fill fades where it was instead of vanishing
+const markerOff = ref(false)
 const route = useRoute()
 
 function placeMarker() {
   const active = root.value?.querySelector<HTMLElement>('.item.active')
-  marker.value = active ? { top: active.offsetTop, height: active.offsetHeight } : undefined
+  markerOff.value = !active
+  if (active) marker.value = { top: active.offsetTop, height: active.offsetHeight }
 }
 
 watch(() => route.path, () => nextTick(placeMarker))
@@ -57,13 +60,14 @@ function toggleTheme(e: MouseEvent) {
 </script>
 
 <template>
-  <aside ref="root" class="sidebar" :class="{ placed: marker }">
+  <aside ref="root" class="sidebar" :class="{ placed: marker && !markerOff }">
     <AppLogo />
     <div class="rule" />
 
     <span
       v-if="marker"
       class="marker"
+      :class="{ off: markerOff }"
       :style="{ transform: `translateY(${marker.top}px)`, height: `${marker.height}px` }"
       aria-hidden="true"
     />
@@ -213,7 +217,12 @@ function toggleTheme(e: MouseEvent) {
   right: 12px;
   border-radius: 9999px;
   background: var(--accent-bg);
-  transition: transform 0.5s var(--ease-out), height 0.5s var(--ease-out);
+  transition: transform 0.5s var(--ease-out), height 0.5s var(--ease-out), opacity 0.3s ease, scale 0.4s var(--ease-out);
+}
+
+.marker.off {
+  opacity: 0;
+  scale: 0.92 1;
 }
 
 .section-rule {

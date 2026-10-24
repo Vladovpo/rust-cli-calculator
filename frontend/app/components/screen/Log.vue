@@ -169,23 +169,29 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
         </div>
 
         <!-- everything the entry has: what changed (was → now), what it was about, where it came from -->
-        <div v-if="open === item.id" class="details">
-          <div v-if="changeLines(item).length" class="block">
-            <p class="kicker">Изменения</p>
-            <p v-for="line in changeLines(item)" :key="line">{{ line }}</p>
+        <Transition name="unfold">
+          <div v-if="open === item.id" class="unfold">
+            <div class="clip">
+              <div class="details">
+                <div v-if="changeLines(item).length" class="block">
+                  <p class="kicker">Изменения</p>
+                  <p v-for="line in changeLines(item)" :key="line">{{ line }}</p>
+                </div>
+                <div v-if="payloadLines(item).length" class="block">
+                  <p class="kicker">Подробности</p>
+                  <p v-for="line in payloadLines(item)" :key="line">{{ line }}</p>
+                </div>
+                <div class="block">
+                  <p class="kicker">Откуда</p>
+                  <p v-if="item.ip" class="mono">IP {{ item.ip }}</p>
+                  <p v-if="item.user_agent" class="muted small-text">{{ item.user_agent }}</p>
+                  <p v-if="item.request_id" class="mono muted small-text">запрос {{ item.request_id }}</p>
+                  <p v-if="!item.ip && !item.user_agent && !item.request_id" class="muted">нет данных</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div v-if="payloadLines(item).length" class="block">
-            <p class="kicker">Подробности</p>
-            <p v-for="line in payloadLines(item)" :key="line">{{ line }}</p>
-          </div>
-          <div class="block">
-            <p class="kicker">Откуда</p>
-            <p v-if="item.ip" class="mono">IP {{ item.ip }}</p>
-            <p v-if="item.user_agent" class="muted small-text">{{ item.user_agent }}</p>
-            <p v-if="item.request_id" class="mono muted small-text">запрос {{ item.request_id }}</p>
-            <p v-if="!item.ip && !item.user_agent && !item.request_id" class="muted">нет данных</p>
-          </div>
-        </div>
+        </Transition>
       </template>
 
       <div v-if="hasMore" ref="sentinel" class="row more">
@@ -319,6 +325,32 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
 
 .outcome.success { background: var(--green-bg); color: var(--green); }
 .outcome.failure { background: var(--red-bg); color: var(--red); }
+
+/* details unfold from the row: the height goes 0 → its own (grid rows 0fr → 1fr), the text fades in */
+.unfold {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.unfold-enter-active,
+.unfold-leave-active {
+  transition: grid-template-rows 0.45s var(--ease-out), opacity 0.3s ease;
+}
+
+.unfold-leave-active {
+  transition-duration: 0.3s, 0.2s;
+}
+
+.unfold-enter-from,
+.unfold-leave-to {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
 
 .details {
   display: grid;
