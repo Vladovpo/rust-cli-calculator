@@ -100,6 +100,10 @@ const statusModel = transitioned(status)
 const currenciesModel = transitioned(currencies)
 const assigneeModel = transitioned(assignee)
 
+function goToday() {
+  monthModel.value = thisMonth.value
+}
+
 // any filter narrower than "everything"
 const isFiltered = computed(() => month.value !== thisMonth.value || status.value !== 'all' || currencies.value.length < 3 || !!assignee.value || columnsOn.value)
 
@@ -132,8 +136,17 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
       </template>
     </AppPageHeader>
 
+    <!-- the month as a big title, like on Календарь -->
+    <div class="toolbar">
+      <UiMonthPicker v-model="monthModel" variant="title" :current="thisMonth" />
+      <!-- back to the current month -->
+      <UiButton class="today" aria-label="Сегодня" title="К сегодняшнему месяцу" @click="goToday"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+          <!-- drawn around the middle of its box, so it sits centred in the round button -->
+          <path d="M8 2.5A5.5 5.5 0 1 1 3.24 5.25M9.9 0.9L8 2.5L9.9 4.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg></UiButton>
+    </div>
+
     <div class="filters">
-      <UiMonthPicker v-model="monthModel" :current="thisMonth" />
       <UiSegmented v-model="statusModel" :options="statusOptions" />
       <UiChips v-model="currenciesModel" :options="currencyOptions" />
       <UiDropdown v-model="assigneeModel" :options="assigneeOptions" prefix="Ответственный:" placeholder="все" compact class="assignee" />
@@ -177,6 +190,26 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
 </template>
 
 <style scoped>
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -10px 0 18px;
+}
+
+.today {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  width: 32px;
+  padding: 0;
+  color: var(--ink-2);
+}
+
+.today:hover {
+  color: var(--ink);
+}
+
 .filters {
   display: flex;
   align-items: center;
