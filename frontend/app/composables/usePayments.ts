@@ -64,6 +64,7 @@ export function usePayments() {
   async function load() {
     if (loading.value) return
     loading.value = true
+    const session = sessionGeneration()
     try {
       const [occurrences, recurring, users] = await Promise.all([
         api.occurrences.list(),
@@ -71,6 +72,8 @@ export function usePayments() {
         // users (for personas and the assignee picker) are admin only
         isAdmin.value ? api.users.list().catch(() => ({ items: [] })) : Promise.resolve({ items: [] as User[] }),
       ])
+      // logged out while this was on its way: it's the previous person's data, drop it
+      if (session !== sessionGeneration()) return
       const userList = users.items ?? []
       const personaOf = (id?: string) => {
         if (id && id === user.value?.id) return user.value?.persona?.name ?? ''
@@ -90,7 +93,7 @@ export function usePayments() {
       loadedAt.value = new Date()
     }
     catch (e) {
-      loadError.value = apiError(e)
+      if (session === sessionGeneration()) loadError.value = apiError(e)
     }
     finally {
       loading.value = false

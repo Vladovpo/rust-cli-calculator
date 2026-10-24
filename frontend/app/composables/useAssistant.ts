@@ -23,6 +23,15 @@ const errorText: Record<string, string> = {
 }
 const unavailable = 'Ассистент сейчас недоступен. Попробуйте позже или включите демо-режим в настройках.'
 
+// the answer being streamed right now, one for the whole panel
+let controller: AbortController | undefined
+
+// stops an answer that's still coming in (logout uses it too)
+export function stopAssistant() {
+  controller?.abort()
+  controller = undefined
+}
+
 // one chat for the whole panel: it stays when you change pages
 export function useAssistant() {
   const api = useApi()
@@ -42,8 +51,6 @@ export function useAssistant() {
     if (status.value) return
     status.value = await api.assistant.status().catch(() => ({}))
   }
-
-  let controller: AbortController | undefined
 
   // the answer appears a few letters at a time, so the window grows with it
   function typeOut(message: ChatMessage, text: string) {
@@ -130,7 +137,7 @@ export function useAssistant() {
   }
 
   function clear() {
-    controller?.abort()
+    stopAssistant()
     messages.value = []
   }
 
