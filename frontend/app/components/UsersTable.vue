@@ -11,6 +11,14 @@ const payments = usePayments()
 onMounted(payments.load)
 const responsibleFor = (id?: string) => payments.templates.value.filter(item => !item.ended && item.assigneeId === id)
 const countText = (n: number) => `${n} ${plural(n, ['платёж', 'платежа', 'платежей'])}`
+
+// the list of those payments in a small card under the count, on hover or focus.
+// it's drawn over the page (Teleport), the table's round corners would cut it off
+const shown = ref<{ id?: string, x: number, y: number }>()
+function showList(user: User, e: Event) {
+  const box = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  shown.value = { id: user.id, x: box.left, y: box.bottom + 6 }
+}
 </script>
 
 <template>
@@ -51,7 +59,12 @@ const countText = (n: number) => `${n} ${plural(n, ['платёж', 'плате�
       <span v-else class="muted">—</span>
       <span
         v-if="responsibleFor(user.id).length"
-        :title="responsibleFor(user.id).map(item => item.title).join(', ')"
+        class="count"
+        tabindex="0"
+        @mouseenter="showList(user, $event)"
+        @mouseleave="shown = undefined"
+        @focus="showList(user, $event)"
+        @blur="shown = undefined"
       >{{ countText(responsibleFor(user.id).length) }}</span>
       <span v-else class="muted">—</span>
       <span class="muted">—</span>
@@ -61,10 +74,75 @@ const countText = (n: number) => `${n} ${plural(n, ['платёж', 'плате�
       <button v-else type="button" class="action soft" @click="$emit('edit', user)">Изменить</button>
     </div>
     <div v-if="hasMore" ref="sentinel" class="sentinel" />
+
+    <Teleport to="body">
+      <Transition name="menu">
+        <div v-if="shown" class="card payments-list" :style="{ left: `${shown.x}px`, top: `${shown.y}px` }">
+          <p class="kicker">Отвечает за</p>
+          <div v-for="item in responsibleFor(shown.id)" :key="item.id" class="payment">
+            <span class="payment-title">{{ item.title }}</span>
+            <span class="mono payment-amount">{{ item.amount }}</span>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
+/* dashed underline: there is a list behind it */
+.count {
+  cursor: default;
+  text-decoration: underline dotted var(--ink-3);
+  text-underline-offset: 3px;
+}
+
+.count:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* like the dropdown menus: surface, hairline, round corners, soft shadow */
+.payments-list {
+  position: fixed;
+  z-index: 20;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-pop);
+  pointer-events: none;
+  transform-origin: top left;
+}
+
+.payments-list .kicker {
+  margin-bottom: 6px;
+}
+
+.payment {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.payment + .payment {
+  border-top: 1px solid var(--line);
+}
+
+.payment-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.payment-amount {
+  flex-shrink: 0;
+  color: var(--ink-2);
+}
+
 .sentinel {
   height: 1px;
 }
