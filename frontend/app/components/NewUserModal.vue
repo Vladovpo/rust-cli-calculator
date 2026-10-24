@@ -46,7 +46,7 @@ async function submit() {
 <template>
   <UiModal
     title="Новый пользователь"
-    subtitle="Роль всегда «Пользователь». Администратор задаётся в .env."
+    subtitle="Роль всегда «Пользователь». Администратор в системе один."
     @close="$emit('close')"
   >
     <UiField label="ФИО">

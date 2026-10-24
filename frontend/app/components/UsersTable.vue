@@ -47,7 +47,7 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.users)
       <span class="muted">—</span>
       <span class="mono soft">{{ formatDate(user.created_at) }}</span>
       <!-- admin comes from .env, can't be edited here -->
-      <span v-if="user.role === 'admin'" class="action muted">через .env</span>
+      <span v-if="user.role === 'admin'" class="action muted" title="Администратора меняют в настройках сервера">Не изменяется</span>
       <button v-else type="button" class="action soft" @click="$emit('edit', user)">Изменить</button>
     </div>
     <div v-if="hasMore" ref="sentinel" class="sentinel" />

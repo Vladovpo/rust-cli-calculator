@@ -461,7 +461,7 @@ try {
 
   await check('T17', async () => {
     const adminRow = rows().filter({ has: page.locator('.role.admin') })
-    assert((await adminRow.innerText()).includes('через .env'), 'no «через .env»')
+    assert((await adminRow.innerText()).includes('Не изменяется'), 'no «Не изменяется»')
     assert(await adminRow.getByRole('button', { name: 'Изменить' }).count() === 0, 'admin row is editable')
   })
 
