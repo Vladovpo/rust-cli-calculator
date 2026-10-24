@@ -65,7 +65,10 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
     <div class="toolbar">
       <UiMonthPicker v-model="monthModel" variant="title" :current="thisMonth" />
       <!-- back to the current month -->
-      <UiButton class="today" aria-label="Сегодня" title="К сегодняшнему месяцу" @click="goToday"><UiIcon name="reset" :size="15" /></UiButton>
+      <UiButton class="today" aria-label="Сегодня" title="К сегодняшнему месяцу" @click="goToday"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+          <!-- drawn around the middle of its box, so it sits centred in the round button -->
+          <path d="M8 2.5A5.5 5.5 0 1 1 3.24 5.25M9.9 0.9L8 2.5L9.9 4.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg></UiButton>
       <span class="legend">
         <UiStatus status="pending" label="ожидает" />
         <UiStatus status="paid" label="оплачено" />

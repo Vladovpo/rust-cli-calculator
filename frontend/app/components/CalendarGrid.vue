@@ -67,7 +67,14 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
       {{ name }}
     </span>
 
-    <div v-for="cell in cells" :key="cell.key" class="cell" :class="{ weekend: cell.weekend }">
+    <!-- a click on the day itself, not on a payment, picks the first payment of that day -->
+    <div
+      v-for="cell in cells"
+      :key="cell.key"
+      class="cell"
+      :class="{ weekend: cell.weekend, pickable: cell.payments.length }"
+      @click="cell.payments.length && select(cell.payments[0]!)"
+    >
       <span v-if="cell.today" class="today"><span class="circle">{{ cell.day }}</span>сегодня</span>
       <span v-else class="day mono" :class="{ other: !cell.inMonth }">{{ cell.day }}</span>
 
@@ -85,7 +92,7 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
           class="payment"
           :class="[period.status, { selected: selected?.id === period.id }]"
           :title="`${period.title} · ${period.amount}`"
-          @click="select(period)"
+          @click.stop="select(period)"
         >
           <span class="dot" />
           <span class="text">
@@ -137,6 +144,10 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 /* first week row has no line above, the weekday header has one */
 .cell:nth-child(-n + 14) {
   border-top: 0;
+}
+
+.cell.pickable {
+  cursor: pointer;
 }
 
 .cell.weekend {
