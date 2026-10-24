@@ -10,10 +10,11 @@ const isDev = import.meta.dev
 
 // like settings on a phone: a list of sections, a click opens one, «Настройки» goes back.
 // the open section lives in the url (?section=), so the browser back button works too
-type Section = 'access' | 'mail' | 'demo' | 'about'
+type Section = 'access' | 'mail' | 'telegram' | 'demo' | 'about'
 const sections: { id: Section, title: string, icon: IconName }[] = [
   { id: 'access', title: 'Доступность', icon: 'access' },
   { id: 'mail', title: 'Напоминания на почту', icon: 'mail' },
+  { id: 'telegram', title: 'Telegram', icon: 'send' },
   { id: 'demo', title: 'Демо-режим', icon: 'demo' },
   { id: 'about', title: 'О системе', icon: 'info' },
 ].filter(item => item.id !== 'demo' || isDev) as { id: Section, title: string, icon: IconName }[]
@@ -28,6 +29,7 @@ const onOff = (on: boolean) => (on ? 'вкл' : 'выкл')
 const summary = computed<Record<Section, string>>(() => ({
   access: [prefs.value.lessMotion && 'меньше движения', prefs.value.readableFont && 'шрифт'].filter(Boolean).join(', ') || 'выкл',
   mail: '',
+  telegram: '',
   demo: onOff(prefs.value.demoMode),
   about: serverText[server.value],
 }))
@@ -109,6 +111,8 @@ const assistantText = { checking: 'проверяем…', ok: 'онлайн', d
           </div>
 
           <NotificationSettings v-else-if="open.id === 'mail'" />
+
+          <TelegramSettings v-else-if="open.id === 'telegram'" />
 
           <div v-else-if="open.id === 'demo'" class="list">
             <div class="row">
