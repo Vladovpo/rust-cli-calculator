@@ -99,7 +99,7 @@ async function personaSaved() {
 }
 
 .layout > :first-child {
-  flex: 1 1 680px;
+  flex: 1 1 790px;
   min-width: 0;
 }
 

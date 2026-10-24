@@ -29,6 +29,7 @@ function showList(user: User, e: Event) {
       <span>Должность</span>
       <span>Отвечает за</span>
       <span>Telegram</span>
+      <span>Почта</span>
       <span>Создан</span>
       <span />
     </div>
@@ -41,6 +42,7 @@ function showList(user: User, e: Event) {
         <UiSkeleton width="90px" />
         <UiSkeleton width="16px" />
         <UiSkeleton width="16px" />
+        <UiSkeleton width="60px" />
         <UiSkeleton width="70px" />
         <span />
       </div>
@@ -68,10 +70,18 @@ function showList(user: User, e: Event) {
       <span v-else class="muted">—</span>
       <span
         v-if="user.telegram_linked"
-        class="telegram"
+        class="linked"
         :title="user.telegram_linked_at ? `Привязан ${formatDate(user.telegram_linked_at)}` : 'Привязан'"
       ><span class="dot" />{{ user.telegram_username ? `@${user.telegram_username}` : 'привязан' }}</span>
       <span v-else class="muted">—</span>
+      <!-- the address itself isn't shown, only whether letters can reach the person -->
+      <span
+        v-if="user.email_linked"
+        class="linked"
+        :class="{ waiting: !user.email_verified }"
+        :title="user.email_verified ? 'Почта подтверждена, письма приходят' : 'Почта указана, но не подтверждена кодом: письма не приходят'"
+      ><span class="dot" />{{ user.email_verified ? 'подтверждена' : 'ждёт кода' }}</span>
+      <span v-else class="muted" title="Почта для напоминаний не указана">—</span>
       <span class="mono soft">{{ formatDate(user.created_at) }}</span>
       <!-- admin comes from .env, can't be edited here -->
       <span v-if="user.role === 'admin'" class="action muted" title="Администратора меняют в настройках сервера">Не изменяется</span>
@@ -94,8 +104,8 @@ function showList(user: User, e: Event) {
 </template>
 
 <style scoped>
-/* linked telegram: green dot and the @username, like the «привязан» state in Настройки */
-.telegram {
+/* linked telegram or email: green dot and a word, like the «привязан» state in Настройки */
+.linked {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -106,7 +116,12 @@ function showList(user: User, e: Event) {
   white-space: nowrap;
 }
 
-.telegram .dot {
+/* email saved but not confirmed yet */
+.linked.waiting {
+  color: var(--amber);
+}
+
+.linked .dot {
   flex-shrink: 0;
   width: 6px;
   height: 6px;
@@ -187,9 +202,9 @@ function showList(user: User, e: Event) {
   display: grid;
   /* every column has its least width and a share of what's left, so the table fills the card evenly */
   grid-template-columns:
-    minmax(120px, 2fr) minmax(108px, 1.2fr) minmax(72px, 1.3fr) minmax(72px, 1fr)
-    minmax(80px, 1.2fr) minmax(76px, 1fr) minmax(92px, 0.9fr);
-  column-gap: 12px;
+    minmax(100px, 2fr) minmax(108px, 1.2fr) minmax(72px, 1.3fr) minmax(72px, 1fr)
+    minmax(64px, 1.2fr) minmax(110px, 1.1fr) minmax(80px, 1fr) minmax(96px, 0.9fr);
+  column-gap: 8px;
   align-items: center;
   height: 60px;
   padding: 0 16px;

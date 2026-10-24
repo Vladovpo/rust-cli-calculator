@@ -109,11 +109,14 @@ const kicker = computed(() => [weekday.value, selected.value?.relative].filter(B
 </template>
 
 <style scoped>
+/* a hairline between the page title and the month title, so the two headings don't run together */
 .toolbar {
   display: flex;
   align-items: center;
   gap: 10px;
   margin: -10px 0 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
 }
 
 .today {

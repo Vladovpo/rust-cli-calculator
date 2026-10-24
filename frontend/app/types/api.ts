@@ -27,6 +27,9 @@ export interface User {
   created_at?: string
   // the user's telegram, from GET /users
   telegram_linked?: boolean
+  // email for reminders is saved, and confirmed with the code from the letter
+  email_linked?: boolean
+  email_verified?: boolean
   telegram_linked_at?: string
   // without the @, '' when not linked or no username
   telegram_username?: string
