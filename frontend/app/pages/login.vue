@@ -49,7 +49,8 @@ async function submit() {
     </section>
 
     <section class="side">
-      <LoginReceipt />
+      <LoginBackdrop />
+      <LoginReceipt class="over-rings" />
     </section>
   </div>
 </template>
@@ -108,7 +109,6 @@ async function submit() {
   margin-top: 12px;
 }
 
-
 .footer {
   margin-top: auto;
   font-size: 12px;
@@ -116,10 +116,18 @@ async function submit() {
 }
 
 .side {
+  /* the rings behind the receipt go past the edges, the section cuts them off */
+  position: relative;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   padding-top: 196px;
   background: var(--subtle);
   border-left: 1px solid var(--line);
+}
+
+/* above the rings */
+.over-rings {
+  position: relative;
 }
 </style>
