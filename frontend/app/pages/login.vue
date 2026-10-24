@@ -34,10 +34,10 @@ async function submit() {
         <h1 class="title display">Вход <em class="italic">в ведомость</em></h1>
         <p class="subtitle">Регулярные платежи команды:<br>что и когда оплатить, что уже оплачено.</p>
 
-        <UiField label="Логин" class="centered">
+        <UiField label="Логин" class="inset">
           <UiInput v-model="form.login" autocomplete="username" maxlength="64" />
         </UiField>
-        <UiField label="Пароль" class="centered">
+        <UiField label="Пароль" class="inset">
           <UiInput v-model="form.password" type="password" autocomplete="current-password" />
         </UiField>
 
@@ -55,9 +55,9 @@ async function submit() {
 </template>
 
 <style scoped>
-/* «Логин» and «Пароль» stand in the middle above their fields */
-.centered :deep(.top) {
-  justify-content: center;
+/* «Логин» and «Пароль» start where the field's round end is over, in line with the text inside */
+.inset :deep(.top) {
+  padding-left: 16px;
 }
 
 .login {

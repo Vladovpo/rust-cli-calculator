@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
   position: relative;
   color: var(--ink);
   /* extra room at the bottom so the stamp fits on the paper */
-  padding: 28px 28px 104px;
+  padding: 28px 28px 124px;
   background: var(--surface);
   font-size: 13px;
 }
@@ -255,7 +255,9 @@ onBeforeUnmount(() => {
 }
 
 .stamp {
-  font-size: 11px;
+  padding: 14px 22px;
+  font-size: 15px;
+  border-width: 2px;
   transform-origin: center;
 }
 
