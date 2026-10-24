@@ -20,10 +20,28 @@ const { visible, hasMore, sentinel } = useLazyList(() => props.periods)
 // id of the row whose "mark paid" popover is open
 const open = ref<string>()
 
+// where the popover sits inside the row: its top left corner at the click
+const at = ref({ x: 0, y: 0 })
+
 // a paid row opens too: to fix the date or take the mark off
-function toggle(period: Period) {
+async function toggle(period: Period, e: MouseEvent) {
   if (!clickable(period)) return
-  open.value = open.value === period.id ? undefined : period.id
+  if (open.value === period.id) {
+    open.value = undefined
+    return
+  }
+  const row = e.currentTarget as HTMLElement
+  const box = row.getBoundingClientRect()
+  at.value = { x: e.clientX - box.left, y: e.clientY - box.top }
+  open.value = period.id
+
+  // near the right or bottom edge of the window it opens to the other side of the click
+  await nextTick()
+  const popover = row.querySelector<HTMLElement>('.popover')
+  if (!popover) return
+  const gap = 12
+  if (e.clientX + popover.offsetWidth + gap > window.innerWidth) at.value.x -= popover.offsetWidth
+  if (e.clientY + popover.offsetHeight + gap > window.innerHeight) at.value.y -= popover.offsetHeight
 }
 
 const clickable = (period: Period) => period.status !== 'ended' && payments.canMark(period)
@@ -49,7 +67,7 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
       class="row rise"
       :class="{ overdue: period.status === 'overdue', clickable: clickable(period), 'has-popover': open === period.id }"
       :style="{ viewTransitionName: `row-${period.id}`, '--i': i }"
-      @click="toggle(period)"
+      @click="toggle(period, $event)"
     >
       <span class="mono muted small">{{ String(i + 1).padStart(2, '0') }}</span>
       <span>
@@ -74,7 +92,13 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
       </span>
 
       <Transition name="menu">
-        <MarkPaidPopover v-if="open === period.id" :period="period" class="popover" @close="open = undefined" />
+        <MarkPaidPopover
+          v-if="open === period.id"
+          :period="period"
+          class="popover"
+          :style="{ left: `${at.x}px`, top: `${at.y}px` }"
+          @close="open = undefined"
+        />
       </Transition>
     </div>
 
@@ -179,12 +203,12 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
 .red { color: var(--red); }
 .amber { color: var(--amber); }
 
+/* opens where the row was clicked (left / top set in toggle), grows out of that corner */
 .popover {
   position: absolute;
-  top: calc(100% + 6px);
-  right: 16px;
   z-index: 2;
   cursor: default;
+  transform-origin: top left;
 }
 
 .sentinel {
