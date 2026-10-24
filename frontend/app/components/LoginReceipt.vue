@@ -30,6 +30,10 @@ const typed = ref(caption.length)
 const typing = ref(false)
 // a new key replays the stamp landing
 const stampKey = ref(0)
+// every time the stamp lands it's at a new angle, up to 35° either way, like stamped by hand
+const randomTilt = () => Math.round((Math.random() * 2 - 1) * 35)
+const tilt = ref(randomTilt())
+watch(stampKey, () => { tilt.value = randomTilt() })
 
 const timers: ReturnType<typeof setTimeout>[] = []
 const later = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms))
@@ -140,7 +144,7 @@ onBeforeUnmount(() => {
       </UiLeaderRow>
 
       <div :key="stampKey" class="stamp-spot" :class="{ hidden: printing && !stampKey }">
-        <UiStamp color="accent" :tilt="7.5" large class="stamp">ПРОВЕРЕНО 24.10</UiStamp>
+        <UiStamp color="accent" :tilt="tilt" large class="stamp">ПРОВЕРЕНО 24.10</UiStamp>
       </div>
     </div>
 
@@ -250,7 +254,8 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 34px;
+  /* higher than before: a steep angle needs room under it too */
+  bottom: 52px;
   text-align: center;
 }
 

@@ -32,7 +32,7 @@ async function submit() {
 
       <form class="form" @submit.prevent="submit">
         <h1 class="title display">Вход <em class="italic">в ведомость</em></h1>
-        <p class="subtitle">Регулярные платежи команды:<br>что и когда оплатить, что уже оплачено.</p>
+        <p class="subtitle">Управление платежами вашей команды</p>
 
         <UiField label="Логин" class="inset">
           <UiInput v-model="form.login" autocomplete="username" maxlength="64" />
