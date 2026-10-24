@@ -108,6 +108,9 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 <style scoped>
 .grid {
   display: grid;
+  /* the days are clicked, not copied */
+  -webkit-user-select: none;
+  user-select: none;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: 30px repeat(var(--weeks), 124px);
   border-top: 1px solid var(--line);

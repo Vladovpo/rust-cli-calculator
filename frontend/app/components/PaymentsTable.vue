@@ -175,6 +175,8 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
 
 .row.clickable {
   cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .row.clickable:hover {
