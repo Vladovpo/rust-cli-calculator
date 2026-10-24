@@ -18,6 +18,14 @@ function select(period: Period) {
   withTransition(() => { selected.value = period })
 }
 
+// the payment after the selected one on that day, back to the first after the last.
+// a day with nothing selected yet starts from its first payment
+function pickNext(onDay: Period[]) {
+  if (!onDay.length) return
+  const at = onDay.findIndex(period => period.id === selected.value?.id)
+  select(onDay[(at + 1) % onDay.length]!)
+}
+
 const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
 // as many weeks as the month touches (5 or 6), starting from the monday before the 1st
@@ -67,13 +75,13 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
       {{ name }}
     </span>
 
-    <!-- a click on the day itself, not on a payment, picks the first payment of that day -->
+    <!-- a click on the day itself, not on a payment, goes through that day's payments one by one -->
     <div
       v-for="cell in cells"
       :key="cell.key"
       class="cell"
       :class="{ weekend: cell.weekend, pickable: cell.payments.length }"
-      @click="cell.payments.length && select(cell.payments[0]!)"
+      @click="pickNext(cell.payments)"
     >
       <span v-if="cell.today" class="today"><span class="circle">{{ cell.day }}</span>сегодня</span>
       <span v-else class="day mono" :class="{ other: !cell.inMonth }">{{ cell.day }}</span>
