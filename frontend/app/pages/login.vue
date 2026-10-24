@@ -43,10 +43,9 @@ async function submit() {
 
         <UiButton variant="primary" size="lg" block class="submit" :disabled="busy">Войти</UiButton>
         <p v-if="error" class="error-text">{{ error }}</p>
-        <p class="hint">Учётные записи выдаёт администратор.</p>
       </form>
 
-      <p class="footer mono">v1.0 · Europe/Moscow</p>
+      <p class="footer mono">Europe/Moscow</p>
     </section>
 
     <section class="side">
@@ -109,11 +108,6 @@ async function submit() {
   margin-top: 12px;
 }
 
-.hint {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--ink-3);
-}
 
 .footer {
   margin-top: auto;
