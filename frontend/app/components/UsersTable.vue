@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { User } from '~/types/api'
 
-defineProps<{ users: User[], loading?: boolean }>()
+const props = defineProps<{ users: User[], loading?: boolean }>()
 defineEmits<{ edit: [user: User] }>()
+
+const { visible, hasMore, sentinel } = useLazyList(() => props.users)
 </script>
 
 <template>
@@ -30,7 +32,7 @@ defineEmits<{ edit: [user: User] }>()
       </div>
     </template>
 
-    <div v-for="(user, i) in (loading ? [] : users)" :key="user.id" class="row rise" :style="{ '--i': i }">
+    <div v-for="(user, i) in (loading ? [] : visible)" :key="user.id" class="row rise" :style="{ '--i': i }">
       <span>
         <span class="name">{{ user.full_name }}</span>
         <span class="login mono">{{ user.login }}</span>
@@ -48,10 +50,15 @@ defineEmits<{ edit: [user: User] }>()
       <span v-if="user.role === 'admin'" class="action muted">через .env</span>
       <button v-else type="button" class="action soft" @click="$emit('edit', user)">Изменить</button>
     </div>
+    <div v-if="hasMore" ref="sentinel" class="sentinel" />
   </div>
 </template>
 
 <style scoped>
+.sentinel {
+  height: 1px;
+}
+
 /* no box around it: rows run the full width, separated by hairlines */
 .table {
   flex: 1;

@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import type { Period } from '~/utils/demo'
 
-defineProps<{ items: Period[], canMark?: (period: Period) => boolean }>()
+const props = defineProps<{ items: Period[], canMark?: (period: Period) => boolean }>()
 
 const shortMonths = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 const monthOf = (due: string) => shortMonths[Number(due.slice(3, 5)) - 1] ?? ''
 defineEmits<{ mark: [period: Period] }>()
+
+const { visible, hasMore, sentinel } = useLazyList(() => props.items)
 </script>
 
 <template>
   <ul class="list">
-    <li v-for="(item, i) in items" :key="item.id" class="row rise" :style="{ '--i': i }">
+    <li v-for="(item, i) in visible" :key="item.id" class="row rise" :style="{ '--i': i }">
       <UiDateTile :month="monthOf(item.due)" :day="item.due.slice(0, 2)" />
       <span class="relative" :class="{ near: item.relative === 'завтра' }">{{ item.relative }}</span>
       <span>
@@ -28,10 +30,15 @@ defineEmits<{ mark: [period: Period] }>()
         <UiButton v-if="!item.paidAt && (!canMark || canMark(item))" @click="$emit('mark', item)">Оплачено</UiButton>
       </span>
     </li>
+    <li v-if="hasMore" ref="sentinel" class="sentinel" />
   </ul>
 </template>
 
 <style scoped>
+.sentinel {
+  height: 1px;
+}
+
 /* no box: hairlines above, between and below the rows */
 .list {
   margin: 0 -12px;

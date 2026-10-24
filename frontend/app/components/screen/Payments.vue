@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Period } from '~/utils/demo'
+
 const { isAdmin } = useRole()
 
 const status = ref('all')
@@ -23,10 +25,22 @@ const assignee = ref('')
 const assigneeOptions = computed(() => payments.assignees.value
   .map(({ person }) => ({ value: person.name, label: person.short, meta: person.persona })))
 
-// currency and assignee filters first, the status filter goes on top of that
+// search in one field, the other filters stay as they are
+const searchField = ref('title')
+const searchQuery = ref('')
+const searchFields = [
+  { value: 'title', label: 'Названию' },
+  { value: 'frequency', label: 'Периодичности' },
+  { value: 'amount', label: 'Сумме' },
+  { value: 'due', label: 'Сроку' },
+  { value: 'paidAt', label: 'Дате оплаты' },
+]
+
+// currency, assignee and search first, the status filter goes on top of that
 const filtered = computed(() => payments.periods.value.filter(period => fromRu(period.due).startsWith(month.value)
   && currencies.value.includes(period.currency)
-  && (!assignee.value || period.who.name === assignee.value)))
+  && (!assignee.value || period.who.name === assignee.value)
+  && matchesSearch(period[searchField.value as keyof Period], searchQuery.value)))
 
 const count = (s: string) => filtered.value.filter(period => s === 'paid'
   ? period.status === 'paid' || period.status === 'late'
@@ -53,7 +67,7 @@ const currenciesModel = transitioned(currencies)
 const assigneeModel = transitioned(assignee)
 
 // any filter narrower than "everything"
-const isFiltered = computed(() => month.value !== thisMonth.value || status.value !== 'all' || currencies.value.length < 3 || !!assignee.value)
+const isFiltered = computed(() => month.value !== thisMonth.value || status.value !== 'all' || currencies.value.length < 3 || !!assignee.value || !!searchQuery.value.trim())
 
 function resetFilters() {
   withTransition(() => {
@@ -61,6 +75,7 @@ function resetFilters() {
     status.value = 'all'
     currencies.value = ['RUB', 'USD', 'EUR']
     assignee.value = ''
+    searchQuery.value = ''
   })
 }
 
@@ -83,6 +98,7 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
       <UiSegmented v-model="statusModel" :options="statusOptions" />
       <UiChips v-model="currenciesModel" :options="currencyOptions" />
       <UiDropdown v-model="assigneeModel" :options="assigneeOptions" prefix="Ответственный:" placeholder="все" compact class="assignee" />
+      <FieldSearch v-model:field="searchField" v-model:query="searchQuery" :fields="searchFields" />
     </div>
 
     <UiState v-if="payments.loadError.value" kind="error" class="load-error" @retry="payments.load">
@@ -106,8 +122,9 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
 <style scoped>
 .filters {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 12px 16px;
   margin-bottom: 18px;
 }
 

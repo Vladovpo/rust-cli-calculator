@@ -19,6 +19,8 @@ const { isAdmin } = useRole()
 // soonest next due date first, stopped ones (no next date) at the end
 const sorted = computed(() => [...props.templates].sort((a, b) =>
   (a.nextDue ? fromRu(a.nextDue) : '9999').localeCompare(b.nextDue ? fromRu(b.nextDue) : '9999')))
+
+const { visible, hasMore, sentinel } = useLazyList(sorted)
 </script>
 
 <template>
@@ -35,7 +37,7 @@ const sorted = computed(() => [...props.templates].sort((a, b) =>
       <span v-if="isAdmin" />
     </div>
 
-    <div v-for="(item, i) in sorted" :key="item.id" class="row rise" :class="{ ended: item.ended }" :style="{ '--i': i }">
+    <div v-for="(item, i) in visible" :key="item.id" class="row rise" :class="{ ended: item.ended }" :style="{ '--i': i }">
       <span class="mono muted small">{{ String(i + 1).padStart(2, '0') }}</span>
       <span>
         <span class="title">{{ item.title }}</span>
@@ -66,6 +68,7 @@ const sorted = computed(() => [...props.templates].sort((a, b) =>
         <button v-else type="button" class="action text-action soon" disabled :title="soonHint">История</button>
       </template>
     </div>
+    <div v-if="hasMore" ref="sentinel" class="sentinel" />
   </div>
 </template>
 
@@ -85,7 +88,8 @@ const sorted = computed(() => [...props.templates].sort((a, b) =>
 
 .row {
   display: grid;
-  grid-template-columns: 36px 234px 130px 90px 180px 160px 120px 1fr;
+  /* the spare width is shared between the columns, so the gaps stay even */
+  grid-template-columns: 36px minmax(190px, 2.2fr) minmax(100px, 1fr) 80px minmax(140px, 1.4fr) minmax(140px, 1.4fr) minmax(100px, 1fr) minmax(100px, 1fr);
   align-items: center;
   height: 56px;
   padding: 0 12px;
@@ -94,7 +98,7 @@ const sorted = computed(() => [...props.templates].sort((a, b) =>
 }
 
 .admin .row {
-  grid-template-columns: 36px 210px 130px 80px 160px 160px 120px 1fr 130px;
+  grid-template-columns: 36px minmax(190px, 2.2fr) minmax(100px, 1fr) 80px minmax(140px, 1.4fr) minmax(140px, 1.4fr) minmax(100px, 1fr) minmax(100px, 1fr) 130px;
 }
 
 /* header: plain small text, the hairline under it does the separating */
@@ -129,6 +133,10 @@ const sorted = computed(() => [...props.templates].sort((a, b) =>
 .ended .title,
 .ended .dim {
   color: var(--ink-3);
+}
+
+.sentinel {
+  height: 1px;
 }
 
 .action {

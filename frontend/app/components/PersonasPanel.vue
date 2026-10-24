@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { Persona } from '~/types/api'
 
-defineProps<{ items: Persona[], loading?: boolean }>()
+const props = defineProps<{ items: Persona[], loading?: boolean }>()
 defineEmits<{ add: [], edit: [persona: Persona] }>()
+
+const { visible, hasMore, sentinel } = useLazyList(() => props.items)
 </script>
 
 <template>
@@ -16,7 +18,7 @@ defineEmits<{ add: [], edit: [persona: Persona] }>()
       <li v-for="n in (loading ? 3 : 0)" :key="`s${n}`" class="item">
         <span class="stack"><UiSkeleton width="100px" /><UiSkeleton width="150px" height="10px" /></span>
       </li>
-      <li v-for="(item, i) in (loading ? [] : items)" :key="item.id" class="item rise" :style="{ '--i': i }">
+      <li v-for="(item, i) in (loading ? [] : visible)" :key="item.id" class="item rise" :style="{ '--i': i }">
         <span>
           <span class="name">{{ item.name }}</span>
           <span v-if="item.description" class="description">{{ item.description }}</span>
@@ -27,6 +29,7 @@ defineEmits<{ add: [], edit: [persona: Persona] }>()
         </span>
       </li>
       <li v-if="!loading && !items.length" class="item muted">Персон пока нет</li>
+      <li v-if="hasMore" ref="sentinel" class="sentinel" />
     </ul>
 
     <footer class="foot">
@@ -36,6 +39,10 @@ defineEmits<{ add: [], edit: [persona: Persona] }>()
 </template>
 
 <style scoped>
+.sentinel {
+  height: 1px;
+}
+
 .panel {
   align-self: flex-start;
   width: 320px;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CurrencyTotal, Period } from '~/utils/demo'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   periods: Period[]
   totals: CurrencyTotal[]
   filtered?: boolean
@@ -11,6 +11,7 @@ withDefaults(defineProps<{
 defineEmits<{ reset: [] }>()
 
 const payments = usePayments()
+const { visible, hasMore, sentinel } = useLazyList(() => props.periods)
 
 // id of the row whose "mark paid" popover is open
 const open = ref<string>()
@@ -39,7 +40,7 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
     </div>
 
     <div
-      v-for="(period, i) in periods"
+      v-for="(period, i) in visible"
       :key="period.id"
       class="row rise"
       :class="{ overdue: period.status === 'overdue', clickable: clickable(period), 'has-popover': open === period.id }"
@@ -72,6 +73,8 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
         <MarkPaidPopover v-if="open === period.id" :period="period" class="popover" @close="open = undefined" />
       </Transition>
     </div>
+
+    <div v-if="hasMore" ref="sentinel" class="sentinel" />
 
     <!-- nothing matched: say so and offer a way out -->
     <template v-if="loading">
@@ -176,6 +179,10 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
   right: 16px;
   z-index: 2;
   cursor: default;
+}
+
+.sentinel {
+  height: 1px;
 }
 
 .reset {

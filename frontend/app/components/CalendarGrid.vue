@@ -27,6 +27,21 @@ const weeks = computed(() => {
   return Math.ceil((shift + days) / 7)
 })
 
+// how many payment lines fit in a cell: the cell's height minus its padding and the day number,
+// every line is 22px with a 4px gap. the grid stretches with the screen, so this is measured
+const grid = ref<HTMLElement>()
+const cellHeight = ref(124)
+const capacity = computed(() => Math.max(1, Math.floor((cellHeight.value - 42 + 4) / 26)))
+
+let observer: ResizeObserver | undefined
+onMounted(() => {
+  observer = new ResizeObserver(() => {
+    cellHeight.value = grid.value?.querySelector<HTMLElement>('.cell')?.offsetHeight ?? 124
+  })
+  if (grid.value) observer.observe(grid.value)
+})
+onBeforeUnmount(() => observer?.disconnect())
+
 const cells = computed(() => monthCells(props.year, props.month, weeks.value).map((cell) => {
   const onDay = cell.inMonth ? props.periods.filter(p => fromRu(p.due) === cell.iso) : []
   return {
@@ -34,15 +49,15 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
     key: cell.iso,
     day: String(cell.day).padStart(2, '0'),
     today: cell.inMonth && cell.day === props.today,
-    // three names fit in a cell, the rest of the day is one "ещё N" line
-    shown: onDay.slice(0, onDay.length > 3 ? 2 : 3),
-    hidden: onDay.slice(onDay.length > 3 ? 2 : 3),
+    // as many names as fit, the rest of the day is one "ещё N" line (which takes a line too)
+    shown: onDay.slice(0, onDay.length > capacity.value ? capacity.value - 1 : capacity.value),
+    hidden: onDay.slice(onDay.length > capacity.value ? capacity.value - 1 : capacity.value),
   }
 }))
 </script>
 
 <template>
-  <div class="grid" :style="{ '--weeks': weeks }">
+  <div ref="grid" class="grid" :style="{ '--weeks': weeks }">
     <span v-for="name in weekdays" :key="name" class="weekday" :class="{ off: name === 'Сб' || name === 'Вс' }">
       {{ name }}
     </span>
@@ -80,7 +95,9 @@ const cells = computed(() => monthCells(props.year, props.month, weeks.value).ma
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: 30px repeat(var(--weeks), 124px);
+  /* fills the screen under the toolbar, never lower than the old fixed size */
+  grid-template-rows: 30px repeat(var(--weeks), minmax(124px, 1fr));
+  min-height: calc(100vh - 190px);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
