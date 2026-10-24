@@ -1,6 +1,6 @@
-<!-- a column title that filters its column. a click opens a small menu with:
+<!-- a filter pill for the bar above a table: «Сумма: от 1 000 ₽». a click opens a small menu with
      a text field (default), the values to pick from (`options`), or two fields «с / по» (`range`).
-     '' means no filter -->
+     '' means no filter, the cross on the pill takes it off -->
 <script setup lang="ts">
 import type { DropdownOption } from '~/components/ui/Dropdown.vue'
 
@@ -13,11 +13,9 @@ const props = withDefaults(defineProps<{
   unit?: string
   // the filter can't be used right now, this says why (e.g. an amount needs one currency)
   blocked?: string
-  // the menu opens to the left, for columns aligned to the right
+  // the menu opens to the left, for pills on the right edge
   right?: boolean
-  // the server can't filter by this column yet: shown as «скоро», can't be opened
-  soon?: boolean
-}>(), { options: undefined, range: undefined, unit: '', blocked: '', right: false, soon: false })
+}>(), { options: undefined, range: undefined, unit: '', blocked: '', right: false })
 
 const model = defineModel<string>({ default: '' })
 const from = defineModel<string>('from', { default: '' })
@@ -35,11 +33,15 @@ watch(open, (value) => {
 
 const current = computed(() => props.options?.find(option => option.value === model.value))
 
-// what's set, for the tooltip: «Срок: с 01.10.2026 по 15.10.2026»
-const shown = (value: string) => (props.range === 'date' ? toRu(value) : `${value} ${props.unit}`.trim())
+// what's picked, on the pill itself: «с 01.10 по 15.10», «от 1 000 ₽», «аренда»
+const short = (value: string) => (props.range === 'date' ? toRu(value).slice(0, 5) : `${value} ${props.unit}`.trim())
 const summary = computed(() => {
-  if (props.range) return [from.value && `с ${shown(from.value)}`, to.value && `по ${shown(to.value)}`].filter(Boolean).join(' ')
-  return current.value?.label ?? model.value
+  if (props.range) {
+    if (from.value && to.value && props.range === 'date') return `${short(from.value)} – ${short(to.value)}`
+    return [from.value && `${props.range === 'date' ? 'с' : 'от'} ${short(from.value)}`, to.value && `${props.range === 'date' ? 'по' : 'до'} ${short(to.value)}`].filter(Boolean).join(' ')
+  }
+  if (props.options) return current.value?.label ?? ''
+  return model.value ? `«${model.value}»` : ''
 })
 
 function pick(value: string) {
@@ -57,16 +59,14 @@ function reset() {
 
 <template>
   <span ref="root" class="filter" :class="{ right }">
-    <button
-      type="button"
-      class="trigger"
-      :class="{ active, open, soon, 'text-action': soon }"
-      :disabled="soon"
-      :title="soon ? 'Фильтр появится, когда сервер научится фильтровать' : active ? `${label}: ${summary}` : `Фильтр: ${label.toLowerCase()}`"
-      @click="open = !open"
-    >
-      <span v-if="active" class="dot" />{{ label }}
-      <UiIcon v-if="!soon" name="down" :size="12" class="caret" :class="{ flip: open }" />
+    <button type="button" class="pill" :class="{ open, active }" :aria-expanded="open" @click="open = !open">
+      <span v-if="active" class="dot" />
+      <span class="prefix">{{ label }}:</span>
+      <span class="value" :class="{ empty: !active }">{{ active ? summary : 'все' }}</span>
+      <span v-if="active" class="clear-x" role="button" :aria-label="`Сбросить: ${label.toLowerCase()}`" @click.stop="reset">
+        <UiIcon name="close" :size="11" />
+      </span>
+      <UiIcon v-else name="down" :size="14" class="caret" :class="{ flip: open }" />
     </button>
 
     <Transition name="menu">
@@ -141,56 +141,82 @@ function reset() {
   min-width: 0;
 }
 
-.filter.right {
-  justify-self: end;
-}
-
-/* looks like the plain column title until hovered or used */
-.trigger {
+/* a pill like UiDropdown: «Сумма: от 1 000 ₽». the value shows what's picked, the cross takes it off */
+.pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin: 0 -6px;
-  padding: 2px 6px;
-  background: none;
-  border: 0;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
   border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink-3);
-  white-space: nowrap;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.trigger:hover,
-.trigger.open {
-  background: var(--subtle);
+  font-size: 13px;
   color: var(--ink);
+  white-space: nowrap;
+  transition: border-color 0.2s ease, box-shadow 0.35s var(--ease-out);
 }
 
-.trigger.active {
-  color: var(--accent-ink);
+.pill:hover:not(.open) {
+  border-color: var(--ink-3);
+}
+
+.pill.open {
+  border-color: var(--ink-2);
+  box-shadow: 0 0 0 3px var(--subtle);
+  animation: focus-ring 0.45s var(--ease-out);
+}
+
+.prefix {
+  color: var(--ink-3);
+}
+
+.value {
+  max-width: 220px;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+
+.value.empty {
+  font-weight: 400;
+  color: var(--ink-3);
 }
 
 .caret {
-  opacity: 0.6;
-  transition: transform 0.35s var(--ease-out), opacity 0.2s ease;
-}
-
-.trigger:hover .caret,
-.trigger.active .caret {
-  opacity: 1;
+  color: var(--ink-3);
+  transition: transform 0.35s var(--ease-out);
 }
 
 .caret.flip {
   transform: rotate(180deg);
 }
 
+/* takes the filter off without opening the menu */
+.clear-x {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: -4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  color: var(--ink-3);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.clear-x:hover {
+  background: var(--subtle);
+  color: var(--ink);
+}
+
 .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--accent);
   animation: dot-in 0.4s var(--ease-spring);
 }
 
@@ -204,7 +230,7 @@ function reset() {
 .menu {
   position: absolute;
   top: calc(100% + 8px);
-  left: -6px;
+  left: 0;
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -222,7 +248,7 @@ function reset() {
 
 .right .menu {
   left: auto;
-  right: -6px;
+  right: 0;
 }
 
 .text {

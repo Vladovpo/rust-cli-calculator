@@ -27,8 +27,8 @@ const assignee = ref('')
 const assigneeOptions = computed(() => payments.assignees.value
   .map(({ person }) => ({ value: person.name, label: person.short, meta: person.persona })))
 
-// the filters in the column titles. with any of them set the server does the search,
-// sending the filters above along (month, currencies, who pays)
+// the search pills (name, due date, amount, paid date). with any of them set the server does the search,
+// sending the other filters along (month, currencies, who pays)
 const columns = ref(noPeriodColumnFilters())
 const columnsOn = computed(() => Object.values(columns.value).some(value => value.trim()))
 const symbols: Record<string, string> = { RUB: '₽', USD: '$', EUR: '€' }
@@ -138,6 +138,19 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
       <UiChips v-model="currenciesModel" :options="currencyOptions" />
       <UiDropdown v-model="assigneeModel" :options="assigneeOptions" prefix="Ответственный:" placeholder="все" compact class="assignee" />
     </div>
+    <div class="filters">
+      <FilterPill v-model="columns.title" label="Название" />
+      <FilterPill v-model:from="columns.dueFrom" v-model:to="columns.dueTo" label="Срок" range="date" />
+      <FilterPill
+        v-model:from="columns.amountFrom"
+        v-model:to="columns.amountTo"
+        label="Сумма"
+        range="amount"
+        :unit="oneCurrency ? symbols[oneCurrency] : ''"
+        :blocked="oneCurrency ? '' : 'Сумму можно искать в одной валюте: оставьте одну в валютах выше'"
+      />
+      <FilterPill v-model:from="columns.paidFrom" v-model:to="columns.paidTo" label="Дата оплаты" range="date" />
+    </div>
 
     <UiState v-if="payments.loadError.value" kind="error" class="load-error" @retry="payments.load">
       Не удалось загрузить платежи: {{ payments.loadError.value }}
@@ -148,12 +161,10 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
     <!-- after a failed load the table would say «no payments», which isn't true -->
     <PaymentsTable
       v-if="!payments.loadError.value"
-      v-model:filters="columns"
       :periods="shown"
       :totals="shownTotals"
       :filtered="isFiltered"
       :month="monthName"
-      :unit="oneCurrency ? symbols[oneCurrency] : ''"
       :loading="payments.pending.value || (columnsOn && search.searching.value && !search.result.value)"
       @reset="resetFilters"
     />
@@ -171,6 +182,12 @@ const shownTotals = computed(() => totalsOn(lastDayOf(month.value), filtered.val
   align-items: center;
   gap: 16px;
   margin-bottom: 18px;
+}
+
+/* the search pills, a second row under the main filters */
+.filters + .filters {
+  gap: 10px;
+  margin-top: -6px;
 }
 
 /* grows to fit the picked name, up to a limit */

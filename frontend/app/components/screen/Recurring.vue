@@ -24,14 +24,20 @@ const assignee = ref('')
 const assigneeOptions = computed(() => payments.assignees.value
   .map(({ person }) => ({ value: person.name, label: person.short, meta: person.persona })))
 
-// the filters in the column titles. with any of them set the server does the search,
-// sending the filters above along (currencies, who pays); the status is still picked here
+// the search pills (name, amount, frequency, next due date). with any of them set the server does the search,
+// sending the other filters along (currencies, who pays); the status is still picked here
 const columns = ref(noTemplateColumnFilters())
 const columnsOn = computed(() => Object.values(columns.value).some(value => value.trim()))
 const symbols: Record<string, string> = { RUB: '₽', USD: '$', EUR: '€' }
 // the server compares amounts only within one currency
 const oneCurrency = computed(() => (currencies.value.length === 1 ? currencies.value[0]! : ''))
 const minor = (text: string) => (text ? Math.round(parseMoney(text) * 100) : undefined)
+
+// the server knows two kinds: by weeks and by months (quarterly and yearly are «every 3 / 12 months»)
+const frequencyOptions = [
+  { value: 'weekly', label: 'Еженедельно' },
+  { value: 'monthly', label: 'Ежемесячно, ежеквартально, ежегодно' },
+]
 
 const search = useServerSearch(() => {
   if (!columnsOn.value) return null
@@ -119,6 +125,19 @@ function stop(template: Template) {
       <UiChips v-model="currenciesModel" :options="currencyOptions" />
       <UiDropdown v-model="assigneeModel" :options="assigneeOptions" prefix="Ответственный:" placeholder="все" compact class="assignee" />
     </div>
+    <div class="filters">
+      <FilterPill v-model="columns.title" label="Название" />
+      <FilterPill
+        v-model:from="columns.amountFrom"
+        v-model:to="columns.amountTo"
+        label="Сумма"
+        range="amount"
+        :unit="oneCurrency ? symbols[oneCurrency] : ''"
+        :blocked="oneCurrency ? '' : 'Сумму можно искать в одной валюте: оставьте одну в валютах выше'"
+      />
+      <FilterPill v-model="columns.frequency" label="Периодичность" :options="frequencyOptions" />
+      <FilterPill v-model:from="columns.nextFrom" v-model:to="columns.nextTo" label="Следующий срок" range="date" />
+    </div>
 
     <UiState v-if="payments.loadError.value" kind="error" class="state alone" @retry="payments.load">
       Не удалось загрузить: {{ payments.loadError.value }}
@@ -126,10 +145,8 @@ function stop(template: Template) {
     <!-- the table stays even when nothing matched: its column titles are where the filters are -->
     <template v-else>
       <RecurringTable
-        v-model:filters="columns"
         :templates="loadingNow ? [] : shown"
         :loading="loadingNow"
-        :unit="oneCurrency ? symbols[oneCurrency] : ''"
         @stop="stop"
       />
       <UiState v-if="columnsOn && search.error.value" kind="error" class="state" @retry="search.retry">
@@ -163,6 +180,12 @@ function stop(template: Template) {
   align-items: center;
   gap: 16px;
   margin-bottom: 18px;
+}
+
+/* the search pills, a second row under the main filters */
+.filters + .filters {
+  gap: 10px;
+  margin-top: -6px;
 }
 
 /* grows to fit the picked name, up to a limit */

@@ -1,5 +1,5 @@
 <!-- «Журнал»: who did what and when. the admin sees everybody (GET /audit-log),
-     a user sees only their own actions (GET /me/activity). filters are in the column titles,
+     a user sees only their own actions (GET /me/activity). filters are pills above the table,
      the next page comes when the end of the list scrolls into view, a click on a row opens its details -->
 <script setup lang="ts">
 import type { AuditActionInfo, AuditLogItem, AuditLogParams, User } from '~/types/api'
@@ -9,7 +9,7 @@ const props = defineProps<{ mine?: boolean }>()
 const api = useApi()
 const PAGE = 50
 
-// filters in the column titles, '' = off
+// the filter pills, '' = off
 const filters = reactive({ from: '', to: '', actor: '', action: '', entity: '', channel: '', outcome: '', q: '' })
 const filtered = computed(() => Object.values(filters).some(Boolean))
 
@@ -124,93 +124,114 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
 </script>
 
 <template>
-  <div class="card table" :class="{ mine }">
-    <div class="row head">
-      <TableFilter v-model:from="filters.from" v-model:to="filters.to" label="Когда" range="date" />
-      <TableFilter v-if="!mine" v-model="filters.actor" label="Кто" :options="actorOptions" />
-      <TableFilter v-model="filters.action" label="Действие" :options="actionOptions" />
-      <TableFilter v-model="filters.entity" label="Объект" :options="entityOptions" />
-      <TableFilter v-model="filters.q" label="Подробности" />
-      <TableFilter v-model="filters.channel" label="Откуда" :options="channelOptions" />
-      <TableFilter v-model="filters.outcome" label="Итог" :options="outcomeOptions" right />
+  <div>
+    <!-- the filters, as pills above the table like on the other pages -->
+    <div class="filters">
+      <FilterPill v-model:from="filters.from" v-model:to="filters.to" label="Когда" range="date" />
+      <FilterPill v-if="!mine" v-model="filters.actor" label="Кто" :options="actorOptions" />
+      <FilterPill v-model="filters.action" label="Действие" :options="actionOptions" />
+      <FilterPill v-model="filters.entity" label="Объект" :options="entityOptions" />
+      <FilterPill v-model="filters.q" label="Подробности" />
+      <FilterPill v-model="filters.channel" label="Откуда" :options="channelOptions" />
+      <FilterPill v-model="filters.outcome" label="Итог" :options="outcomeOptions" />
     </div>
 
-    <!-- grey rows of the same size until the entries arrive -->
-    <template v-if="loading">
-      <div v-for="n in 6" :key="n" class="row">
-        <UiSkeleton width="110px" />
-        <span v-if="!mine" class="stack"><UiSkeleton width="120px" /><UiSkeleton width="70px" height="10px" /></span>
-        <UiSkeleton width="150px" />
-        <UiSkeleton width="110px" />
-        <UiSkeleton width="200px" />
-        <UiSkeleton width="60px" height="20px" />
-        <UiSkeleton width="70px" height="20px" class="end" />
+    <div class="card table" :class="{ mine }">
+      <div class="row head">
+        <span>Когда</span>
+        <span v-if="!mine">Кто</span>
+        <span>Действие</span>
+        <span>Объект</span>
+        <span>Подробности</span>
+        <span>Откуда</span>
+        <span class="end">Итог</span>
       </div>
-    </template>
 
-    <template v-else>
-      <template v-for="(item, i) in items" :key="item.id">
-        <div class="row entry rise" :class="{ opened: open === item.id }" :style="{ '--i': i % PAGE }" @click="toggle(item)">
-          <span class="mono soft">{{ when(item.created_at) }}</span>
-          <span v-if="!mine">
-            <span class="name">{{ actorName(item) }}</span>
-            <span v-if="item.actor?.role" class="small muted">{{ roleName(item.actor.role) }}</span>
-          </span>
-          <span class="strong">{{ actionLabel(item.action_label, item.action) }}</span>
-          <span class="soft">{{ entityNames[item.entity_type ?? ''] ?? '—' }}</span>
-          <span class="summary">
-            <span class="ellipsis">{{ summary(item) || '—' }}</span>
-            <span v-if="extra(item)" class="small muted">ещё {{ extra(item) }}</span>
-          </span>
-          <span><span class="pill">{{ channelNames[item.channel ?? ''] ?? item.channel }}</span></span>
-          <span class="end">
-            <span class="outcome" :class="item.outcome"><span class="dot" />{{ item.outcome === 'failure' ? 'Ошибка' : 'Успешно' }}</span>
-          </span>
+      <!-- grey rows of the same size until the entries arrive -->
+      <template v-if="loading">
+        <div v-for="n in 6" :key="n" class="row">
+          <UiSkeleton width="110px" />
+          <span v-if="!mine" class="stack"><UiSkeleton width="120px" /><UiSkeleton width="70px" height="10px" /></span>
+          <UiSkeleton width="150px" />
+          <UiSkeleton width="110px" />
+          <UiSkeleton width="200px" />
+          <UiSkeleton width="60px" height="20px" />
+          <UiSkeleton width="70px" height="20px" class="end" />
         </div>
+      </template>
 
-        <!-- everything the entry has: what changed (was → now), what it was about, where it came from -->
-        <Transition name="unfold">
-          <div v-if="open === item.id" class="unfold">
-            <div class="clip">
-              <div class="details">
-                <div v-if="changeLines(item).length" class="block">
-                  <p class="kicker">Изменения</p>
-                  <p v-for="line in changeLines(item)" :key="line">{{ line }}</p>
-                </div>
-                <div v-if="payloadLines(item).length" class="block">
-                  <p class="kicker">Подробности</p>
-                  <p v-for="line in payloadLines(item)" :key="line">{{ line }}</p>
-                </div>
-                <div class="block">
-                  <p class="kicker">Откуда</p>
-                  <p v-if="item.ip" class="mono">IP {{ item.ip }}</p>
-                  <p v-if="item.user_agent" class="muted small-text">{{ item.user_agent }}</p>
-                  <p v-if="item.request_id" class="mono muted small-text">запрос {{ item.request_id }}</p>
-                  <p v-if="!item.ip && !item.user_agent && !item.request_id" class="muted">нет данных</p>
+      <template v-else>
+        <template v-for="(item, i) in items" :key="item.id">
+          <div class="row entry rise" :class="{ opened: open === item.id }" :style="{ '--i': i % PAGE }" @click="toggle(item)">
+            <span class="mono soft">{{ when(item.created_at) }}</span>
+            <span v-if="!mine">
+              <span class="name">{{ actorName(item) }}</span>
+              <span v-if="item.actor?.role" class="small muted">{{ roleName(item.actor.role) }}</span>
+            </span>
+            <span class="strong">{{ actionLabel(item.action_label, item.action) }}</span>
+            <span class="soft">{{ entityNames[item.entity_type ?? ''] ?? '—' }}</span>
+            <span class="summary">
+              <span class="ellipsis">{{ summary(item) || '—' }}</span>
+              <span v-if="extra(item)" class="small muted">ещё {{ extra(item) }}</span>
+            </span>
+            <span><span class="pill">{{ channelNames[item.channel ?? ''] ?? item.channel }}</span></span>
+            <span class="end">
+              <span class="outcome" :class="item.outcome"><span class="dot" />{{ item.outcome === 'failure' ? 'Ошибка' : 'Успешно' }}</span>
+            </span>
+          </div>
+
+          <!-- everything the entry has: what changed (was → now), what it was about, where it came from -->
+          <Transition name="unfold">
+            <div v-if="open === item.id" class="unfold">
+              <div class="clip">
+                <div class="details">
+                  <div v-if="changeLines(item).length" class="block">
+                    <p class="kicker">Изменения</p>
+                    <p v-for="line in changeLines(item)" :key="line">{{ line }}</p>
+                  </div>
+                  <div v-if="payloadLines(item).length" class="block">
+                    <p class="kicker">Подробности</p>
+                    <p v-for="line in payloadLines(item)" :key="line">{{ line }}</p>
+                  </div>
+                  <div class="block">
+                    <p class="kicker">Откуда</p>
+                    <p v-if="item.ip" class="mono">IP {{ item.ip }}</p>
+                    <p v-if="item.user_agent" class="muted small-text">{{ item.user_agent }}</p>
+                    <p v-if="item.request_id" class="mono muted small-text">запрос {{ item.request_id }}</p>
+                    <p v-if="!item.ip && !item.user_agent && !item.request_id" class="muted">нет данных</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Transition>
-      </template>
-
-      <div v-if="hasMore" ref="sentinel" class="row more">
-        <UiSkeleton width="160px" />
-      </div>
-
-      <UiState v-if="error" kind="error" class="state" @retry="reload">Не удалось загрузить журнал: {{ error }}</UiState>
-      <UiState v-else-if="!items.length" class="state">
-        {{ filtered ? 'Под эти фильтры записей нет.' : mine ? 'Вы пока ничего не делали.' : 'Журнал пока пуст.' }}
-        <template v-if="filtered">
-          <br>
-          <button type="button" class="reset" @click="reset">Сбросить фильтры</button>
+          </Transition>
         </template>
-      </UiState>
-    </template>
+
+        <div v-if="hasMore" ref="sentinel" class="row more">
+          <UiSkeleton width="160px" />
+        </div>
+
+        <UiState v-if="error" kind="error" class="state" @retry="reload">Не удалось загрузить журнал: {{ error }}</UiState>
+        <UiState v-else-if="!items.length" class="state">
+          {{ filtered ? 'Под эти фильтры записей нет.' : mine ? 'Вы пока ничего не делали.' : 'Журнал пока пуст.' }}
+          <template v-if="filtered">
+            <br>
+            <button type="button" class="reset" @click="reset">Сбросить фильтры</button>
+          </template>
+        </UiState>
+      </template>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
 /* a rounded card like the other admin tables, rows separated by hairlines inside */
 .table {
   overflow: visible;
@@ -231,10 +252,8 @@ const extra = (item: AuditLogItem) => Math.max(0, changeLines(item).length - 1)
   grid-template-columns: 130px 230px 170px minmax(0, 1fr) 96px 96px;
 }
 
-/* header: plain small text, the hairline under it does the separating. above the rows for the filter menus */
+/* header: plain small text, the hairline under it does the separating */
 .row.head {
-  position: relative;
-  z-index: 4;
   min-height: 40px;
   border-top: 0;
   font-size: 12px;

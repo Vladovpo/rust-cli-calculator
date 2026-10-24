@@ -92,7 +92,7 @@ export interface Template {
   ended?: boolean
 }
 
-// the filters in the column titles of «Периоды», '' = off.
+// the search pills above «Периоды», '' = off.
 // amounts are typed in rubles / dollars / euros, dates are YYYY-MM-DD
 export interface PeriodColumnFilters {
   title: string
@@ -107,7 +107,7 @@ export interface PeriodColumnFilters {
 export const noPeriodColumnFilters = (): PeriodColumnFilters =>
   ({ title: '', dueFrom: '', dueTo: '', amountFrom: '', amountTo: '', paidFrom: '', paidTo: '' })
 
-// the filters in the column titles of «Регулярные», '' = off. frequency is the server's: weekly | monthly
+// the search pills above «Регулярные», '' = off. frequency is the server's: weekly | monthly
 export interface TemplateColumnFilters {
   title: string
   amountFrom: string

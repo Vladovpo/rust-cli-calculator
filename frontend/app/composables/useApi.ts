@@ -1,4 +1,8 @@
 import type {
+  AddReceiptLinkRequest,
+  Receipt,
+  ReceiptAccessResponse,
+  ReceiptListResponse,
   AssistantAnswerResponse,
   AssistantHistoryResponse,
   AuditActionsResponse,
@@ -99,6 +103,22 @@ export function useApi() {
       replace: (body: UpdateUserNotificationSettingsRequest) => api('/notifications/settings', { method: 'PUT', body }),
       patch: (body: PatchUserNotificationSettingsRequest) => api('/notifications/settings', { method: 'PATCH', body }),
       remove: () => api('/notifications/settings', { method: 'DELETE' }),
+    },
+
+    // receipts of a payment period: files and links. the assignee and the admin can see and change them
+    receipts: {
+      list: (periodId: string) => api<ReceiptListResponse>(`/payment-occurrences/${encodeURIComponent(periodId)}/receipts`),
+      // multipart, the file goes in the `file` field
+      upload: (periodId: string, file: File, title = '') => {
+        const body = new FormData()
+        body.append('file', file)
+        return api<Receipt>(`/payment-occurrences/${encodeURIComponent(periodId)}/receipts`, { method: 'POST', body, query: title ? { title } : undefined })
+      },
+      addLink: (periodId: string, body: AddReceiptLinkRequest) =>
+        api<Receipt>(`/payment-occurrences/${encodeURIComponent(periodId)}/receipts/link`, { method: 'POST', body }),
+      // where to open it: the link itself, or a signed address of the file
+      access: (id: string) => api<ReceiptAccessResponse>(`/receipts/${encodeURIComponent(id)}/access`),
+      remove: (id: string) => api(`/receipts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     },
 
     // who did what: the whole log for the admin, your own actions for everyone

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CurrencyTotal, Period, PeriodColumnFilters } from '~/utils/periods'
+import type { CurrencyTotal, Period } from '~/utils/periods'
 
 const props = withDefaults(defineProps<{
   periods: Period[]
@@ -7,34 +7,39 @@ const props = withDefaults(defineProps<{
   filtered?: boolean
   month?: string
   loading?: boolean
-  // the sign of the one picked currency, '' when there are several (then amounts can't be filtered)
-  unit?: string
-}>(), { month: 'октябрь', unit: '' })
+}>(), { month: 'октябрь' })
 defineEmits<{ reset: [] }>()
 
-// a filter per column, '' = off. the screen sends them to the server (GET /payment-occurrences/search)
-const filters = defineModel<PeriodColumnFilters>('filters', { required: true })
 
 const payments = usePayments()
 const { visible, hasMore, sentinel } = useLazyList(() => props.periods)
 
-// id of the row whose "mark paid" popover is open
-const open = ref<string>()
+// the row whose popover is open: marking it paid, or its receipts
+const open = ref<{ id: string, kind: 'paid' | 'receipts' }>()
+const isOpen = (period: Period, kind: 'paid' | 'receipts') => open.value?.id === period.id && open.value.kind === kind
 
 // where the popover sits inside the row: its top left corner at the click
 const at = ref({ x: 0, y: 0 })
 
 // a paid row opens too: to fix the date or take the mark off
-async function toggle(period: Period, e: MouseEvent) {
-  if (!clickable(period)) return
-  if (open.value === period.id) {
+function toggle(period: Period, e: MouseEvent) {
+  if (clickable(period)) openAt(period, 'paid', e, e.currentTarget as HTMLElement)
+}
+
+// the paperclip in the row: its receipts, without opening «mark paid»
+function showReceipts(period: Period, e: MouseEvent) {
+  const row = (e.currentTarget as HTMLElement).closest<HTMLElement>('.row')
+  if (row) openAt(period, 'receipts', e, row)
+}
+
+async function openAt(period: Period, kind: 'paid' | 'receipts', e: MouseEvent, row: HTMLElement) {
+  if (isOpen(period, kind)) {
     open.value = undefined
     return
   }
-  const row = e.currentTarget as HTMLElement
   const box = row.getBoundingClientRect()
   at.value = { x: e.clientX - box.left, y: e.clientY - box.top }
-  open.value = period.id
+  open.value = { id: period.id, kind }
 
   // near the right or bottom edge of the window it opens to the other side of the click
   await nextTick()
@@ -46,35 +51,33 @@ async function toggle(period: Period, e: MouseEvent) {
 }
 
 const clickable = (period: Period) => period.status !== 'ended' && payments.canMark(period)
+
+// receipts: the assignee and the admin see them. the rows on screen ask how many there are, a few at a time
+const receipts = useReceipts()
+watch(visible, rows => rows.filter(payments.canMark).forEach(period => receipts.ensure(period.id)), { immediate: true })
+const receiptCount = (period: Period) => receipts.byPeriod.value[period.id]?.length
 </script>
 
 <template>
   <div class="table">
     <div class="row head">
       <span class="mono muted">№</span>
-      <TableFilter v-model="filters.title" label="Название" />
+      <span>Название</span>
       <span>Ответственный</span>
-      <TableFilter v-model:from="filters.dueFrom" v-model:to="filters.dueTo" label="Срок" range="date" />
-      <TableFilter
-        v-model:from="filters.amountFrom"
-        v-model:to="filters.amountTo"
-        label="Сумма"
-        range="amount"
-        :unit="unit"
-        :blocked="unit ? '' : 'Сумму можно искать в одной валюте: оставьте одну в фильтре сверху'"
-        right
-      />
+      <span>Срок</span>
+      <span class="right">Сумма</span>
       <span class="currency">Валюта</span>
       <span>Статус</span>
-      <TableFilter v-model:from="filters.paidFrom" v-model:to="filters.paidTo" label="Дата оплаты" range="date" />
+      <span>Дата оплаты</span>
       <span class="right">Просрочка</span>
+      <span class="center">Чек</span>
     </div>
 
     <div
       v-for="(period, i) in visible"
       :key="period.id"
       class="row rise"
-      :class="{ overdue: period.status === 'overdue', clickable: clickable(period), 'has-popover': open === period.id }"
+      :class="{ overdue: period.status === 'overdue', clickable: clickable(period), 'has-popover': open?.id === period.id }"
       :style="{ viewTransitionName: `row-${period.id}`, '--i': i }"
       @click="toggle(period, $event)"
     >
@@ -99,11 +102,36 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
       <span class="mono right" :class="period.status === 'overdue' ? 'red strong' : period.status === 'late' ? 'amber strong' : 'muted'">
         {{ period.overdue ?? '—' }}
       </span>
+      <span class="center">
+        <button
+          v-if="payments.canMark(period)"
+          type="button"
+          class="receipts"
+          :class="{ has: receiptCount(period), opened: isOpen(period, 'receipts') }"
+          :aria-label="receiptCount(period) ? `Чеки: ${receiptCount(period)}` : 'Прикрепить чек'"
+          :title="receiptCount(period) ? 'Чеки: открыть или скачать' : 'Прикрепить чек'"
+          @click.stop="showReceipts(period, $event)"
+        >
+          <UiIcon name="clip" :size="14" />
+          <span v-if="receiptCount(period)" class="mono">{{ receiptCount(period) }}</span>
+        </button>
+        <span v-else class="muted">—</span>
+      </span>
 
       <Transition name="menu">
         <MarkPaidPopover
-          v-if="open === period.id"
+          v-if="isOpen(period, 'paid')"
           :period="period"
+          class="popover"
+          :style="{ left: `${at.x}px`, top: `${at.y}px` }"
+          @close="open = undefined"
+        />
+      </Transition>
+      <Transition name="menu">
+        <ReceiptsPopover
+          v-if="isOpen(period, 'receipts')"
+          :period="period"
+          :can-edit="payments.canMark(period)"
           class="popover"
           :style="{ left: `${at.x}px`, top: `${at.y}px` }"
           @close="open = undefined"
@@ -158,7 +186,7 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
 .row {
   position: relative;
   display: grid;
-  grid-template-columns: 36px 224px 150px 110px 140px 90px 190px 90px 74px;
+  grid-template-columns: 36px 200px 150px 110px 140px 90px 170px 90px 74px 64px;
   align-items: center;
   height: 56px;
   padding: 0 12px;
@@ -215,6 +243,38 @@ const clickable = (period: Period) => period.status !== 'ended' && payments.canM
 .amber { color: var(--amber); }
 
 /* opens where the row was clicked (left / top set in toggle), grows out of that corner */
+/* the paperclip: faint when there are no receipts, coloured with the count when there are */
+.receipts {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  font-size: 12px;
+  color: var(--ink-3);
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.35s var(--ease-spring);
+}
+
+.receipts:hover,
+.receipts.opened {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  color: var(--ink);
+  transform: rotate(-6deg);
+}
+
+.receipts.has {
+  background: var(--accent-bg);
+  color: var(--accent-ink);
+}
+
+.center {
+  justify-self: center;
+}
+
 .popover {
   position: absolute;
   z-index: 2;

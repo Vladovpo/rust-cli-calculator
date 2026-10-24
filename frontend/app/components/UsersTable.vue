@@ -28,8 +28,7 @@ function showList(user: User, e: Event) {
       <span>Роль</span>
       <span>Должность</span>
       <span>Отвечает за</span>
-      <!-- the server gives telegram only for yourself (/me/telegram), not for each user -->
-      <span class="soon text-action" :title="'Появится, когда сервер начнёт отдавать привязку Telegram для каждого пользователя'">Telegram</span>
+      <span>Telegram</span>
       <span>Создан</span>
       <span />
     </div>
@@ -67,7 +66,12 @@ function showList(user: User, e: Event) {
         @blur="shown = undefined"
       >{{ countText(responsibleFor(user.id).length) }}</span>
       <span v-else class="muted">—</span>
-      <span class="muted">—</span>
+      <span
+        v-if="user.telegram_linked"
+        class="telegram"
+        :title="user.telegram_linked_at ? `Привязан ${formatDate(user.telegram_linked_at)}` : 'Привязан'"
+      ><span class="dot" />{{ user.telegram_username ? `@${user.telegram_username}` : 'привязан' }}</span>
+      <span v-else class="muted">—</span>
       <span class="mono soft">{{ formatDate(user.created_at) }}</span>
       <!-- admin comes from .env, can't be edited here -->
       <span v-if="user.role === 'admin'" class="action muted" title="Администратора меняют в настройках сервера">Не изменяется</span>
@@ -90,6 +94,26 @@ function showList(user: User, e: Event) {
 </template>
 
 <style scoped>
+/* linked telegram: green dot and the @username, like the «привязан» state in Настройки */
+.telegram {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--green);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.telegram .dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 /* dashed underline: there is a list behind it */
 .count {
   cursor: default;
@@ -161,7 +185,7 @@ function showList(user: User, e: Event) {
 
 .row {
   display: grid;
-  grid-template-columns: 180px 120px 130px 88px 70px 90px 1fr;
+  grid-template-columns: 170px 120px 120px 88px 110px 90px 1fr;
   align-items: center;
   height: 60px;
   padding: 0 16px;

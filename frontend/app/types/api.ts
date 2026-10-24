@@ -25,6 +25,11 @@ export interface User {
   role?: string
   persona?: PersonaRef | null // null if the persona was deleted
   created_at?: string
+  // the user's telegram, from GET /users
+  telegram_linked?: boolean
+  telegram_linked_at?: string
+  // without the @, '' when not linked or no username
+  telegram_username?: string
 }
 
 export interface UserListResponse {
@@ -420,4 +425,42 @@ export interface AuditActionInfo {
 
 export interface AuditActionsResponse {
   items?: AuditActionInfo[]
+}
+
+// response.ReceiptResponse — a file kept on the server (kind=file) or an outside link (kind=link)
+export interface Receipt {
+  id?: string
+  payment_id?: string
+  kind?: 'file' | 'link'
+  // '' when not given
+  title?: string
+  // files only
+  file_name?: string
+  content_type?: string
+  size_bytes?: number
+  // links only
+  url?: string
+  uploaded_by?: string
+  uploaded_by_name?: string
+  created_at?: string
+}
+
+// newest last
+export interface ReceiptListResponse {
+  items?: Receipt[]
+  total?: number
+}
+
+// request.AddReceiptLinkRequest — http(s) only, without a scheme https is added
+export interface AddReceiptLinkRequest {
+  url: string
+  title?: string
+}
+
+// response.ReceiptAccessResponse — for a file: /api/v1/receipt-files/{id}?exp=…&sig=…,
+// opens without logging in until expires_at
+export interface ReceiptAccessResponse {
+  kind?: 'file' | 'link'
+  url?: string
+  expires_at?: string
 }
